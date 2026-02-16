@@ -12,7 +12,6 @@ An sFlow v5 parser library written in Rust. Parses sFlow datagrams (RFC 3176) in
 - **Flow record types**: Raw Packet Header, Sampled Ethernet, Sampled IPv4/IPv6, Extended Switch, Extended Router, Extended Gateway, Extended User, Extended URL
 - **Counter record types**: Generic Interface, Ethernet Interface, Token Ring, VLAN, Processor
 - **Unknown record handling**: Unrecognized records captured as raw bytes for forward compatibility
-- **Stateless parsing**: No template caches needed (unlike NetFlow V9/IPFIX)
 - **Serde support**: All types serialize/deserialize to JSON and other formats
 - **Builder pattern**: Optional configuration (e.g., max samples limit for DoS protection)
 
