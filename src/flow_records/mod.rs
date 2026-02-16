@@ -1,0 +1,124 @@
+pub mod extended_gateway;
+pub mod extended_router;
+pub mod extended_switch;
+pub mod extended_url;
+pub mod extended_user;
+pub mod raw_packet_header;
+pub mod sampled_ethernet;
+pub mod sampled_ipv4;
+pub mod sampled_ipv6;
+
+use nom::IResult;
+use nom::number::complete::be_u32;
+use serde::{Deserialize, Serialize};
+
+pub use extended_gateway::ExtendedGateway;
+pub use extended_router::ExtendedRouter;
+pub use extended_switch::ExtendedSwitch;
+pub use extended_url::ExtendedUrl;
+pub use extended_user::ExtendedUser;
+pub use raw_packet_header::RawPacketHeader;
+pub use sampled_ethernet::SampledEthernet;
+pub use sampled_ipv4::SampledIpv4;
+pub use sampled_ipv6::SampledIpv6;
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum FlowRecord {
+    RawPacketHeader(RawPacketHeader),
+    SampledEthernet(SampledEthernet),
+    SampledIpv4(SampledIpv4),
+    SampledIpv6(SampledIpv6),
+    ExtendedSwitch(ExtendedSwitch),
+    ExtendedRouter(ExtendedRouter),
+    ExtendedGateway(ExtendedGateway),
+    ExtendedUser(ExtendedUser),
+    ExtendedUrl(ExtendedUrl),
+    Unknown {
+        enterprise: u32,
+        format: u32,
+        data: Vec<u8>,
+    },
+}
+
+pub fn parse_flow_records(
+    mut input: &[u8],
+    num_records: u32,
+) -> IResult<&[u8], Vec<FlowRecord>> {
+    let mut records = Vec::with_capacity(num_records as usize);
+
+    for _ in 0..num_records {
+        let (rest, data_format) = be_u32(input)?;
+        let enterprise = data_format >> 12;
+        let format = data_format & 0xFFF;
+
+        let (rest, record_length) = be_u32(rest)?;
+        let record_length = record_length as usize;
+
+        if rest.len() < record_length {
+            return Err(nom::Err::Error(nom::error::Error::new(
+                rest,
+                nom::error::ErrorKind::Eof,
+            )));
+        }
+
+        let record_data = &rest[..record_length];
+        let after_record = &rest[record_length..];
+
+        let record = if enterprise == 0 {
+            match format {
+                1 => {
+                    let (_, r) = raw_packet_header::parse_raw_packet_header(record_data)?;
+                    FlowRecord::RawPacketHeader(r)
+                }
+                2 => {
+                    let (_, r) = sampled_ethernet::parse_sampled_ethernet(record_data)?;
+                    FlowRecord::SampledEthernet(r)
+                }
+                3 => {
+                    let (_, r) = sampled_ipv4::parse_sampled_ipv4(record_data)?;
+                    FlowRecord::SampledIpv4(r)
+                }
+                4 => {
+                    let (_, r) = sampled_ipv6::parse_sampled_ipv6(record_data)?;
+                    FlowRecord::SampledIpv6(r)
+                }
+                1001 => {
+                    let (_, r) = extended_switch::parse_extended_switch(record_data)?;
+                    FlowRecord::ExtendedSwitch(r)
+                }
+                1002 => {
+                    let (_, r) = extended_router::parse_extended_router(record_data)?;
+                    FlowRecord::ExtendedRouter(r)
+                }
+                1003 => {
+                    let (_, r) = extended_gateway::parse_extended_gateway(record_data)?;
+                    FlowRecord::ExtendedGateway(r)
+                }
+                1004 => {
+                    let (_, r) = extended_user::parse_extended_user(record_data)?;
+                    FlowRecord::ExtendedUser(r)
+                }
+                1005 => {
+                    let (_, r) = extended_url::parse_extended_url(record_data)?;
+                    FlowRecord::ExtendedUrl(r)
+                }
+                _ => FlowRecord::Unknown {
+                    enterprise,
+                    format,
+                    data: record_data.to_vec(),
+                },
+            }
+        } else {
+            FlowRecord::Unknown {
+                enterprise,
+                format,
+                data: record_data.to_vec(),
+            }
+        };
+
+        records.push(record);
+        input = after_record;
+    }
+
+    Ok((input, records))
+}
