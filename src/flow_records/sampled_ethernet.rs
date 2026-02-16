@@ -3,8 +3,9 @@ use nom::IResult;
 use nom::number::complete::be_u32;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SampledEthernet {
+    pub length: u32,
     pub src_mac: MacAddress,
     pub dst_mac: MacAddress,
     pub eth_type: u32,
@@ -22,9 +23,9 @@ fn parse_mac(input: &[u8]) -> IResult<&[u8], MacAddress> {
     Ok((&input[8..], MacAddress::new(bytes)))
 }
 
-pub fn parse_sampled_ethernet(input: &[u8]) -> IResult<&[u8], SampledEthernet> {
+pub(crate) fn parse_sampled_ethernet(input: &[u8]) -> IResult<&[u8], SampledEthernet> {
     // sFlow sampled ethernet: length(4) + src_mac(8) + dst_mac(8) + eth_type(4)
-    let (input, _length) = be_u32(input)?;
+    let (input, length) = be_u32(input)?;
     let (input, src_mac) = parse_mac(input)?;
     let (input, dst_mac) = parse_mac(input)?;
     let (input, eth_type) = be_u32(input)?;
@@ -32,6 +33,7 @@ pub fn parse_sampled_ethernet(input: &[u8]) -> IResult<&[u8], SampledEthernet> {
     Ok((
         input,
         SampledEthernet {
+            length,
             src_mac,
             dst_mac,
             eth_type,

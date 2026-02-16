@@ -18,7 +18,7 @@ pub use vlan::Vlan;
 ///
 /// Counter records contain periodic interface and system statistics
 /// reported by the sFlow agent.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum CounterRecord {
     /// Generic interface counters (enterprise=0, format=1).
     GenericInterface(GenericInterface),
@@ -41,11 +41,13 @@ pub enum CounterRecord {
     },
 }
 
-pub fn parse_counter_records(
+pub(crate) fn parse_counter_records(
     mut input: &[u8],
     num_records: u32,
 ) -> IResult<&[u8], Vec<CounterRecord>> {
-    let mut records = Vec::with_capacity(num_records as usize);
+    // Cap capacity to prevent DoS: each record needs at least 8 bytes (format + length)
+    let cap = (num_records as usize).min(input.len() / 8);
+    let mut records = Vec::with_capacity(cap);
 
     for _ in 0..num_records {
         let (rest, data_format) = be_u32(input)?;

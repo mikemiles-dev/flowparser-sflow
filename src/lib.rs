@@ -1,4 +1,5 @@
 #![doc = include_str!("../README.md")]
+#![forbid(unsafe_code)]
 
 pub mod counter_records;
 pub mod datagram;
@@ -22,7 +23,7 @@ use serde::{Deserialize, Serialize};
 /// Contains all successfully parsed datagrams and an optional error
 /// if parsing failed partway through. This allows partial results
 /// when a buffer contains multiple datagrams and one is malformed.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ParseResult {
     /// Successfully parsed sFlow datagrams.
     pub datagrams: Vec<SflowDatagram>,
@@ -83,19 +84,8 @@ impl SflowParser {
                 };
             }
 
-            match datagram::parse_datagram(remaining) {
+            match datagram::parse_datagram(remaining, self.max_samples) {
                 Ok((rest, dg)) => {
-                    if let Some(max) = self.max_samples
-                        && dg.samples.len() as u32 > max
-                    {
-                        return ParseResult {
-                            datagrams,
-                            error: Some(SflowError::TooManySamples {
-                                count: dg.samples.len() as u32,
-                                max,
-                            }),
-                        };
-                    }
                     datagrams.push(dg);
                     remaining = rest;
                 }
@@ -124,7 +114,7 @@ pub struct SflowParserBuilder {
 impl SflowParserBuilder {
     /// Set the maximum number of samples allowed per datagram.
     /// Datagrams exceeding this limit will return a
-    /// [`SflowError::TooManySamples`] error.
+    /// [`SflowError::TooManySamples`] error before parsing any samples.
     pub fn with_max_samples(mut self, max: u32) -> Self {
         self.max_samples = Some(max);
         self

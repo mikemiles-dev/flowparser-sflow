@@ -3,7 +3,7 @@
 [![Rust](https://github.com/mikemiles-dev/sflow_parser/actions/workflows/rust.yml/badge.svg)](https://github.com/mikemiles-dev/sflow_parser/actions/workflows/rust.yml)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/License-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE-MIT)
 
-An sFlow v5 parser library written in Rust. Parses sFlow datagrams (RFC 3176) including flow samples, counter samples, and all standard record types.
+An sFlow v5 parser library written in Rust. Parses sFlow v5 datagrams ([sFlow v5 specification](https://sflow.org/sflow_version_5.txt)) including flow samples, counter samples, and all standard record types.
 
 ## Features
 

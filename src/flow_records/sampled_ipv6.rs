@@ -3,7 +3,7 @@ use nom::number::complete::{be_u32, be_u64};
 use serde::{Deserialize, Serialize};
 use std::net::Ipv6Addr;
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SampledIpv6 {
     pub length: u32,
     pub protocol: u32,
@@ -24,7 +24,7 @@ fn parse_ipv6(input: &[u8]) -> IResult<&[u8], Ipv6Addr> {
     Ok((input, Ipv6Addr::from(octets)))
 }
 
-pub fn parse_sampled_ipv6(input: &[u8]) -> IResult<&[u8], SampledIpv6> {
+pub(crate) fn parse_sampled_ipv6(input: &[u8]) -> IResult<&[u8], SampledIpv6> {
     let (input, length) = be_u32(input)?;
     let (input, protocol) = be_u32(input)?;
     let (input, src_ip) = parse_ipv6(input)?;

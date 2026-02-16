@@ -2,7 +2,7 @@ use nom::IResult;
 use nom::number::complete::be_u32;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct EthernetInterface {
     pub dot3_stats_alignment_errors: u32,
     pub dot3_stats_fcs_errors: u32,
@@ -19,7 +19,7 @@ pub struct EthernetInterface {
     pub dot3_stats_symbol_errors: u32,
 }
 
-pub fn parse_ethernet_interface(input: &[u8]) -> IResult<&[u8], EthernetInterface> {
+pub(crate) fn parse_ethernet_interface(input: &[u8]) -> IResult<&[u8], EthernetInterface> {
     let (input, dot3_stats_alignment_errors) = be_u32(input)?;
     let (input, dot3_stats_fcs_errors) = be_u32(input)?;
     let (input, dot3_stats_single_collision_frames) = be_u32(input)?;

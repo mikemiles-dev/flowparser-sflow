@@ -2,7 +2,7 @@ use nom::IResult;
 use nom::number::complete::be_u32;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TokenRing {
     pub dot5_stats_line_errors: u32,
     pub dot5_stats_burst_errors: u32,
@@ -24,7 +24,7 @@ pub struct TokenRing {
     pub dot5_stats_freq_errors: u32,
 }
 
-pub fn parse_token_ring(input: &[u8]) -> IResult<&[u8], TokenRing> {
+pub(crate) fn parse_token_ring(input: &[u8]) -> IResult<&[u8], TokenRing> {
     let (input, dot5_stats_line_errors) = be_u32(input)?;
     let (input, dot5_stats_burst_errors) = be_u32(input)?;
     let (input, dot5_stats_ac_errors) = be_u32(input)?;

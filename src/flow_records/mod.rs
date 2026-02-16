@@ -9,6 +9,7 @@ pub mod sampled_ipv4;
 pub mod sampled_ipv6;
 
 use nom::IResult;
+use nom::bytes::complete::take;
 use nom::number::complete::be_u32;
 use serde::{Deserialize, Serialize};
 
@@ -26,7 +27,7 @@ pub use sampled_ipv6::SampledIpv6;
 ///
 /// Flow records describe properties of a sampled packet, ranging from
 /// raw header bytes to decoded L2/L3/L4 fields and extended routing data.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum FlowRecord {
     /// Raw packet header bytes (enterprise=0, format=1).
     RawPacketHeader(RawPacketHeader),
@@ -57,11 +58,26 @@ pub enum FlowRecord {
     },
 }
 
-pub fn parse_flow_records(
+/// Parse an XDR-encoded sFlow string (length-prefixed, padded to 4-byte boundary).
+///
+/// Note: Invalid UTF-8 bytes are replaced with U+FFFD (replacement character).
+pub(crate) fn parse_sflow_string(input: &[u8]) -> IResult<&[u8], String> {
+    let (input, length) = be_u32(input)?;
+    let (input, bytes) = take(length as usize)(input)?;
+    // Pad to 4-byte boundary
+    let padding = (4 - (length as usize % 4)) % 4;
+    let (input, _) = take(padding)(input)?;
+    let s = String::from_utf8_lossy(bytes).into_owned();
+    Ok((input, s))
+}
+
+pub(crate) fn parse_flow_records(
     mut input: &[u8],
     num_records: u32,
 ) -> IResult<&[u8], Vec<FlowRecord>> {
-    let mut records = Vec::with_capacity(num_records as usize);
+    // Cap capacity to prevent DoS: each record needs at least 8 bytes (format + length)
+    let cap = (num_records as usize).min(input.len() / 8);
+    let mut records = Vec::with_capacity(cap);
 
     for _ in 0..num_records {
         let (rest, data_format) = be_u32(input)?;

@@ -2,7 +2,7 @@ use nom::IResult;
 use nom::number::complete::be_u32;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ExtendedSwitch {
     pub src_vlan: u32,
     pub src_priority: u32,
@@ -10,7 +10,7 @@ pub struct ExtendedSwitch {
     pub dst_priority: u32,
 }
 
-pub fn parse_extended_switch(input: &[u8]) -> IResult<&[u8], ExtendedSwitch> {
+pub(crate) fn parse_extended_switch(input: &[u8]) -> IResult<&[u8], ExtendedSwitch> {
     let (input, src_vlan) = be_u32(input)?;
     let (input, src_priority) = be_u32(input)?;
     let (input, dst_vlan) = be_u32(input)?;

@@ -3,7 +3,7 @@ use nom::number::complete::be_u32;
 use serde::{Deserialize, Serialize};
 use std::net::Ipv4Addr;
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SampledIpv4 {
     pub length: u32,
     pub protocol: u32,
@@ -15,7 +15,7 @@ pub struct SampledIpv4 {
     pub tos: u32,
 }
 
-pub fn parse_sampled_ipv4(input: &[u8]) -> IResult<&[u8], SampledIpv4> {
+pub(crate) fn parse_sampled_ipv4(input: &[u8]) -> IResult<&[u8], SampledIpv4> {
     let (input, length) = be_u32(input)?;
     let (input, protocol) = be_u32(input)?;
     let (input, src_ip_raw) = be_u32(input)?;

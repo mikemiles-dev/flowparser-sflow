@@ -72,12 +72,13 @@ fn print_flow_record(idx: usize, rec: &FlowRecord) {
             );
         }
         FlowRecord::SampledEthernet(SampledEthernet {
+            length,
             src_mac,
             dst_mac,
             eth_type,
         }) => {
             println!(
-                "  Record[{idx}]: SampledEthernet {{ src_mac={src_mac}, dst_mac={dst_mac}, eth_type={eth_type} }}"
+                "  Record[{idx}]: SampledEthernet {{ length={length}, src_mac={src_mac}, dst_mac={dst_mac}, eth_type={eth_type} }}"
             );
         }
         FlowRecord::SampledIpv4(SampledIpv4 {

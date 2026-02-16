@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 
 /// Errors that can occur when parsing sFlow datagrams.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SflowError {
     /// The input buffer is too short to read the expected field.
     Incomplete {
@@ -27,7 +27,7 @@ pub enum SflowError {
     },
     /// The datagram contains more samples than the configured limit.
     TooManySamples {
-        /// Number of samples in the datagram.
+        /// Number of samples declared in the datagram header.
         count: u32,
         /// Configured maximum.
         max: u32,

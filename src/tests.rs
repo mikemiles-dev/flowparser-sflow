@@ -760,3 +760,159 @@ fn test_parse_result_serialization() {
     let deserialized: ParseResult = serde_json::from_str(&json).unwrap();
     assert_eq!(result, deserialized);
 }
+
+// === Coverage Gap Tests ===
+
+#[test]
+fn test_parse_sampled_ethernet() {
+    // datagram header + flow sample + sampled_ethernet record (format=2)
+    // sampled_ethernet: length(4) + src_mac(8) + dst_mac(8) + eth_type(4) = 24 bytes
+    // sample_length = flow_header(32) + record_header(8) + record_body(24) = 64 = 0x40
+    let data = h("\
+        0000   00 00 00 05 00 00 00 01 0a 00 00 01 00 00 00 00\n\
+        0010   00 00 00 01 00 00 03 e8 00 00 00 01 00 00 00 01\n\
+        0020   00 00 00 40 00 00 00 01 00 00 00 03 00 00 01 00\n\
+        0030   00 00 03 e8 00 00 00 00 00 00 00 01 00 00 00 02\n\
+        0040   00 00 00 01 00 00 00 02 00 00 00 18 00 00 00 40\n\
+        0050   aa bb cc dd ee ff 00 00 11 22 33 44 55 66 00 00\n\
+        0060   00 00 08 00\
+    ");
+
+    let parser = SflowParser::default();
+    let result = parser.parse_bytes(&data);
+    assert!(result.error.is_none());
+
+    let fs = match &result.datagrams[0].samples[0] {
+        SflowSample::Flow(fs) => fs,
+        other => panic!("Expected Flow, got {:?}", other),
+    };
+    match &fs.records[0] {
+        FlowRecord::SampledEthernet(se) => {
+            assert_eq!(se.length, 64);
+            assert_eq!(se.src_mac.to_string(), "AA:BB:CC:DD:EE:FF");
+            assert_eq!(se.dst_mac.to_string(), "11:22:33:44:55:66");
+            assert_eq!(se.eth_type, 0x0800);
+        }
+        other => panic!("Expected SampledEthernet, got {:?}", other),
+    }
+}
+
+#[test]
+fn test_parse_error_display() {
+    let err = SflowError::ParseError {
+        offset: 42,
+        context: "flow record".to_string(),
+        kind: "bad data".to_string(),
+    };
+    let msg = format!("{}", err);
+    assert!(msg.contains("42"));
+    assert!(msg.contains("flow record"));
+    assert!(msg.contains("bad data"));
+}
+
+#[test]
+fn test_invalid_address_type() {
+    // version=5, addr_type=3 (invalid — only 1=IPv4, 2=IPv6 are valid)
+    let data = h("\
+        0000   00 00 00 05 00 00 00 03 0a 00 00 01 00 00 00 00\n\
+        0010   00 00 00 01 00 00 03 e8 00 00 00 00\
+    ");
+    let parser = SflowParser::default();
+    let result = parser.parse_bytes(&data);
+    assert!(result.error.is_some());
+    match result.error.unwrap() {
+        SflowError::ParseError { context, .. } => {
+            assert!(context.contains("address"));
+        }
+        other => panic!("Expected ParseError for address, got {:?}", other),
+    }
+}
+
+#[test]
+fn test_multi_datagram_buffer() {
+    // Two back-to-back datagrams in one buffer
+    let single = h("\
+        0000   00 00 00 05 00 00 00 01 0a 00 00 01 00 00 00 00\n\
+        0010   00 00 00 01 00 00 03 e8 00 00 00 00\
+    ");
+    let mut data = single.clone();
+    data.extend_from_slice(&single);
+
+    let parser = SflowParser::default();
+    let result = parser.parse_bytes(&data);
+    assert!(result.error.is_none());
+    assert_eq!(result.datagrams.len(), 2);
+    assert_eq!(result.datagrams[0].sequence_number, 1);
+    assert_eq!(result.datagrams[1].sequence_number, 1);
+}
+
+#[test]
+fn test_extended_gateway_empty_segments() {
+    // Extended gateway with 0 path segments and 0 communities
+    // record_body: addr_type(4) + IPv4(4) + as(4) + src_as(4) + peer_as(4) + path_count(4) + communities_count(4) = 28
+    // sample_length = flow_header(32) + record_header(8) + record_body(28) = 68 = 0x44
+    let data = h("\
+        0000   00 00 00 05 00 00 00 01 0a 00 00 01 00 00 00 00\n\
+        0010   00 00 00 01 00 00 03 e8 00 00 00 01 00 00 00 01\n\
+        0020   00 00 00 44 00 00 00 01 00 00 00 03 00 00 01 00\n\
+        0030   00 00 03 e8 00 00 00 00 00 00 00 01 00 00 00 02\n\
+        0040   00 00 00 01 00 00 03 eb 00 00 00 1c 00 00 00 01\n\
+        0050   0a 00 00 01 00 00 fd e8 00 00 fd e8 00 00 fd e9\n\
+        0060   00 00 00 00 00 00 00 00\
+    ");
+
+    let parser = SflowParser::default();
+    let result = parser.parse_bytes(&data);
+    assert!(result.error.is_none());
+
+    let fs = match &result.datagrams[0].samples[0] {
+        SflowSample::Flow(fs) => fs,
+        other => panic!("Expected Flow, got {:?}", other),
+    };
+    match &fs.records[0] {
+        FlowRecord::ExtendedGateway(eg) => {
+            assert_eq!(eg.as_number, 65000);
+            assert_eq!(eg.as_path_segments.len(), 0);
+            assert_eq!(eg.communities.len(), 0);
+        }
+        other => panic!("Expected ExtendedGateway, got {:?}", other),
+    }
+}
+
+#[test]
+fn test_extended_router_ipv6_next_hop() {
+    // Extended router with IPv6 next-hop
+    // record_body: addr_type(4) + IPv6(16) + src_mask(4) + dst_mask(4) = 28
+    // sample_length = flow_header(32) + record_header(8) + record_body(28) = 68 = 0x44
+    let data = h("\
+        0000   00 00 00 05 00 00 00 01 0a 00 00 01 00 00 00 00\n\
+        0010   00 00 00 01 00 00 03 e8 00 00 00 01 00 00 00 01\n\
+        0020   00 00 00 44 00 00 00 01 00 00 00 03 00 00 01 00\n\
+        0030   00 00 03 e8 00 00 00 00 00 00 00 01 00 00 00 02\n\
+        0040   00 00 00 01 00 00 03 ea 00 00 00 1c 00 00 00 02\n\
+        0050   fe 80 00 00 00 00 00 00 00 00 00 00 00 00 00 01\n\
+        0060   00 00 00 30 00 00 00 18\
+    ");
+
+    let parser = SflowParser::default();
+    let result = parser.parse_bytes(&data);
+    assert!(result.error.is_none());
+
+    let fs = match &result.datagrams[0].samples[0] {
+        SflowSample::Flow(fs) => fs,
+        other => panic!("Expected Flow, got {:?}", other),
+    };
+    match &fs.records[0] {
+        FlowRecord::ExtendedRouter(er) => {
+            match &er.next_hop {
+                AddressType::IPv6(addr) => {
+                    assert_eq!(*addr, "fe80::1".parse::<Ipv6Addr>().unwrap());
+                }
+                other => panic!("Expected IPv6 next-hop, got {:?}", other),
+            }
+            assert_eq!(er.src_mask_len, 48);
+            assert_eq!(er.dst_mask_len, 24);
+        }
+        other => panic!("Expected ExtendedRouter, got {:?}", other),
+    }
+}

@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::counter_records::{CounterRecord, parse_counter_records};
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CounterSample {
     pub sequence_number: u32,
     pub source_id_type: u32,
@@ -12,7 +12,7 @@ pub struct CounterSample {
     pub records: Vec<CounterRecord>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ExpandedCounterSample {
     pub sequence_number: u32,
     pub source_id_type: u32,
@@ -20,7 +20,7 @@ pub struct ExpandedCounterSample {
     pub records: Vec<CounterRecord>,
 }
 
-pub fn parse_counter_sample(input: &[u8]) -> IResult<&[u8], CounterSample> {
+pub(crate) fn parse_counter_sample(input: &[u8]) -> IResult<&[u8], CounterSample> {
     let (input, sequence_number) = be_u32(input)?;
     let (input, source_id) = be_u32(input)?;
     let source_id_type = source_id >> 24;
@@ -40,7 +40,9 @@ pub fn parse_counter_sample(input: &[u8]) -> IResult<&[u8], CounterSample> {
     ))
 }
 
-pub fn parse_expanded_counter_sample(input: &[u8]) -> IResult<&[u8], ExpandedCounterSample> {
+pub(crate) fn parse_expanded_counter_sample(
+    input: &[u8],
+) -> IResult<&[u8], ExpandedCounterSample> {
     let (input, sequence_number) = be_u32(input)?;
     let (input, source_id_type) = be_u32(input)?;
     let (input, source_id_index) = be_u32(input)?;

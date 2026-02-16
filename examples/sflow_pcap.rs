@@ -12,18 +12,22 @@ fn main() {
     }
 
     let file = File::open(&args[1]).expect("Failed to open pcap file");
-    let reader = BufReader::new(file);
+    let mut reader = BufReader::new(file);
 
     let parser = SflowParser::default();
     let mut packet_count = 0;
 
-    // Try pcap-ng first, fall back to legacy pcap
+    // Read magic bytes to detect format, then seek back
     let magic = {
-        let f = File::open(&args[1]).expect("Failed to open pcap file");
-        let mut buf = [0u8; 4];
         use std::io::Read;
-        let mut f = f;
-        f.read_exact(&mut buf).expect("Failed to read file header");
+        let mut buf = [0u8; 4];
+        reader
+            .read_exact(&mut buf)
+            .expect("Failed to read file header");
+        use std::io::Seek;
+        reader
+            .seek(std::io::SeekFrom::Start(0))
+            .expect("Failed to seek");
         u32::from_le_bytes(buf)
     };
 

@@ -34,7 +34,8 @@ This library parses untrusted network input (sFlow datagrams). The following are
 
 The parser includes the following protections:
 
-- **Max samples limit**: Configurable via `SflowParser::builder().with_max_samples(n)` to bound resource consumption
+- **Max samples limit**: Configurable via `SflowParser::builder().with_max_samples(n)` to reject datagrams exceeding the limit before parsing any samples
+- **Capped allocations**: All `Vec::with_capacity` calls are capped against available input length to prevent memory exhaustion from crafted count fields
 - **Length-checked reads**: All field reads are bounds-checked before access
-- **No unsafe code**: The library uses only safe Rust
+- **No unsafe code**: The library uses `#![forbid(unsafe_code)]` to guarantee no unsafe blocks at compile time
 - **Fuzz testing**: The parser is fuzz-tested with `cargo-fuzz` against arbitrary byte inputs

@@ -6,12 +6,15 @@ use std::net::{Ipv4Addr, Ipv6Addr};
 use crate::error::SflowError;
 use crate::samples::{SflowSample, parse_samples};
 
-/// An sFlow agent's network address, either IPv4 or IPv6.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+/// An sFlow address, either IPv4 or IPv6.
+///
+/// Used for both agent addresses in the datagram header and
+/// next-hop addresses in extended router/gateway records.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum AddressType {
-    /// IPv4 agent address.
+    /// IPv4 address.
     IPv4(Ipv4Addr),
-    /// IPv6 agent address.
+    /// IPv6 address.
     IPv6(Ipv6Addr),
 }
 
@@ -19,7 +22,7 @@ pub enum AddressType {
 ///
 /// Each datagram is sent by an sFlow agent and contains a header
 /// identifying the agent, plus zero or more flow or counter samples.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SflowDatagram {
     /// sFlow version (always 5).
     pub version: u32,
@@ -35,7 +38,7 @@ pub struct SflowDatagram {
     pub samples: Vec<SflowSample>,
 }
 
-pub fn parse_address(input: &[u8]) -> IResult<&[u8], AddressType> {
+pub(crate) fn parse_address(input: &[u8]) -> IResult<&[u8], AddressType> {
     let (input, addr_type) = be_u32(input)?;
     match addr_type {
         1 => {
@@ -57,7 +60,10 @@ pub fn parse_address(input: &[u8]) -> IResult<&[u8], AddressType> {
     }
 }
 
-pub fn parse_datagram(input: &[u8]) -> Result<(&[u8], SflowDatagram), SflowError> {
+pub(crate) fn parse_datagram(
+    input: &[u8],
+    max_samples: Option<u32>,
+) -> Result<(&[u8], SflowDatagram), SflowError> {
     let original = input;
 
     let (input, version) = be_u32(input).map_err(|_: nom::Err<nom::error::Error<&[u8]>>| {
@@ -110,6 +116,16 @@ pub fn parse_datagram(input: &[u8]) -> Result<(&[u8], SflowDatagram), SflowError
                 context: "num_samples".to_string(),
             }
         })?;
+
+    // Enforce max_samples limit before parsing to prevent DoS
+    if let Some(max) = max_samples
+        && num_samples > max
+    {
+        return Err(SflowError::TooManySamples {
+            count: num_samples,
+            max,
+        });
+    }
 
     let (input, samples) = parse_samples(input, num_samples)?;
 

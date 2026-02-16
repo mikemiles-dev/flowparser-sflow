@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::flow_records::{FlowRecord, parse_flow_records};
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct FlowSample {
     pub sequence_number: u32,
     pub source_id_type: u32,
@@ -17,7 +17,7 @@ pub struct FlowSample {
     pub records: Vec<FlowRecord>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ExpandedFlowSample {
     pub sequence_number: u32,
     pub source_id_type: u32,
@@ -32,7 +32,7 @@ pub struct ExpandedFlowSample {
     pub records: Vec<FlowRecord>,
 }
 
-pub fn parse_flow_sample(input: &[u8]) -> IResult<&[u8], FlowSample> {
+pub(crate) fn parse_flow_sample(input: &[u8]) -> IResult<&[u8], FlowSample> {
     let (input, sequence_number) = be_u32(input)?;
     let (input, source_id) = be_u32(input)?;
     let source_id_type = source_id >> 24;
@@ -62,7 +62,7 @@ pub fn parse_flow_sample(input: &[u8]) -> IResult<&[u8], FlowSample> {
     ))
 }
 
-pub fn parse_expanded_flow_sample(input: &[u8]) -> IResult<&[u8], ExpandedFlowSample> {
+pub(crate) fn parse_expanded_flow_sample(input: &[u8]) -> IResult<&[u8], ExpandedFlowSample> {
     let (input, sequence_number) = be_u32(input)?;
     let (input, source_id_type) = be_u32(input)?;
     let (input, source_id_index) = be_u32(input)?;

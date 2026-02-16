@@ -2,7 +2,7 @@ use nom::IResult;
 use nom::number::complete::{be_u32, be_u64};
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct GenericInterface {
     pub if_index: u32,
     pub if_type: u32,
@@ -25,7 +25,7 @@ pub struct GenericInterface {
     pub if_promiscuous_mode: u32,
 }
 
-pub fn parse_generic_interface(input: &[u8]) -> IResult<&[u8], GenericInterface> {
+pub(crate) fn parse_generic_interface(input: &[u8]) -> IResult<&[u8], GenericInterface> {
     let (input, if_index) = be_u32(input)?;
     let (input, if_type) = be_u32(input)?;
     let (input, if_speed) = be_u64(input)?;

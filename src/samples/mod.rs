@@ -13,7 +13,7 @@ pub use flow_sample::{ExpandedFlowSample, FlowSample};
 /// Each datagram can contain a mix of flow samples (packet-level data)
 /// and counter samples (interface statistics). Expanded variants use
 /// separate fields for source ID type and index instead of a packed u32.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SflowSample {
     /// Standard flow sample (enterprise=0, format=1).
     Flow(FlowSample),
@@ -34,11 +34,13 @@ pub enum SflowSample {
     },
 }
 
-pub fn parse_samples(
+pub(crate) fn parse_samples(
     mut input: &[u8],
     num_samples: u32,
 ) -> Result<(&[u8], Vec<SflowSample>), SflowError> {
-    let mut samples = Vec::with_capacity(num_samples as usize);
+    // Cap capacity to prevent DoS: each sample needs at least 8 bytes (format + length)
+    let cap = (num_samples as usize).min(input.len() / 8);
+    let mut samples = Vec::with_capacity(cap);
 
     for _ in 0..num_samples {
         let (rest, data_format) =
@@ -74,42 +76,41 @@ pub fn parse_samples(
         let sample = if enterprise == 0 {
             match format {
                 1 => {
-                    let (_, fs) =
-                        flow_sample::parse_flow_sample(sample_data).map_err(|_| {
-                            SflowError::ParseError {
-                                offset: 0,
-                                context: "flow sample".to_string(),
-                                kind: "parse failure".to_string(),
-                            }
-                        })?;
+                    let (_, fs) = flow_sample::parse_flow_sample(sample_data).map_err(|e| {
+                        SflowError::ParseError {
+                            offset: 0,
+                            context: "flow sample".to_string(),
+                            kind: nom_error_kind(&e),
+                        }
+                    })?;
                     SflowSample::Flow(fs)
                 }
                 2 => {
                     let (_, cs) =
-                        counter_sample::parse_counter_sample(sample_data).map_err(|_| {
+                        counter_sample::parse_counter_sample(sample_data).map_err(|e| {
                             SflowError::ParseError {
                                 offset: 0,
                                 context: "counter sample".to_string(),
-                                kind: "parse failure".to_string(),
+                                kind: nom_error_kind(&e),
                             }
                         })?;
                     SflowSample::Counter(cs)
                 }
                 3 => {
                     let (_, efs) = flow_sample::parse_expanded_flow_sample(sample_data)
-                        .map_err(|_| SflowError::ParseError {
+                        .map_err(|e| SflowError::ParseError {
                             offset: 0,
                             context: "expanded flow sample".to_string(),
-                            kind: "parse failure".to_string(),
+                            kind: nom_error_kind(&e),
                         })?;
                     SflowSample::ExpandedFlow(efs)
                 }
                 4 => {
                     let (_, ecs) = counter_sample::parse_expanded_counter_sample(sample_data)
-                        .map_err(|_| SflowError::ParseError {
+                        .map_err(|e| SflowError::ParseError {
                         offset: 0,
                         context: "expanded counter sample".to_string(),
-                        kind: "parse failure".to_string(),
+                        kind: nom_error_kind(&e),
                     })?;
                     SflowSample::ExpandedCounter(ecs)
                 }
@@ -132,4 +133,11 @@ pub fn parse_samples(
     }
 
     Ok((input, samples))
+}
+
+fn nom_error_kind(e: &nom::Err<nom::error::Error<&[u8]>>) -> String {
+    match e {
+        nom::Err::Error(e) | nom::Err::Failure(e) => format!("{:?}", e.code),
+        nom::Err::Incomplete(_) => "incomplete".to_string(),
+    }
 }
