@@ -22,20 +22,37 @@ pub use sampled_ethernet::SampledEthernet;
 pub use sampled_ipv4::SampledIpv4;
 pub use sampled_ipv6::SampledIpv6;
 
+/// A flow record within a flow sample.
+///
+/// Flow records describe properties of a sampled packet, ranging from
+/// raw header bytes to decoded L2/L3/L4 fields and extended routing data.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum FlowRecord {
+    /// Raw packet header bytes (enterprise=0, format=1).
     RawPacketHeader(RawPacketHeader),
+    /// Sampled Ethernet frame header (enterprise=0, format=2).
     SampledEthernet(SampledEthernet),
+    /// Sampled IPv4 packet header (enterprise=0, format=3).
     SampledIpv4(SampledIpv4),
+    /// Sampled IPv6 packet header (enterprise=0, format=4).
     SampledIpv6(SampledIpv6),
+    /// Extended switch data — VLAN and priority (enterprise=0, format=1001).
     ExtendedSwitch(ExtendedSwitch),
+    /// Extended router data — next hop and masks (enterprise=0, format=1002).
     ExtendedRouter(ExtendedRouter),
+    /// Extended gateway data — BGP AS path and communities (enterprise=0, format=1003).
     ExtendedGateway(ExtendedGateway),
+    /// Extended user data — source and destination user identifiers (enterprise=0, format=1004).
     ExtendedUser(ExtendedUser),
+    /// Extended URL data — URL and host strings (enterprise=0, format=1005).
     ExtendedUrl(ExtendedUrl),
+    /// Unrecognized flow record type, preserved as raw bytes.
     Unknown {
+        /// Enterprise code from the record header.
         enterprise: u32,
+        /// Format code from the record header.
         format: u32,
+        /// Raw record data.
         data: Vec<u8>,
     },
 }

@@ -8,15 +8,28 @@ use crate::error::SflowError;
 pub use counter_sample::{CounterSample, ExpandedCounterSample};
 pub use flow_sample::{ExpandedFlowSample, FlowSample};
 
+/// An sFlow sample carried within a datagram.
+///
+/// Each datagram can contain a mix of flow samples (packet-level data)
+/// and counter samples (interface statistics). Expanded variants use
+/// separate fields for source ID type and index instead of a packed u32.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum SflowSample {
+    /// Standard flow sample (enterprise=0, format=1).
     Flow(FlowSample),
+    /// Standard counter sample (enterprise=0, format=2).
     Counter(CounterSample),
+    /// Expanded flow sample with unpacked source ID (enterprise=0, format=3).
     ExpandedFlow(ExpandedFlowSample),
+    /// Expanded counter sample with unpacked source ID (enterprise=0, format=4).
     ExpandedCounter(ExpandedCounterSample),
+    /// Unrecognized sample type, preserved as raw bytes.
     Unknown {
+        /// Enterprise code from the sample header.
         enterprise: u32,
+        /// Format code from the sample header.
         format: u32,
+        /// Raw sample data.
         data: Vec<u8>,
     },
 }

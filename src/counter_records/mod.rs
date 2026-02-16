@@ -14,16 +14,29 @@ pub use processor::Processor;
 pub use token_ring::TokenRing;
 pub use vlan::Vlan;
 
+/// A counter record within a counter sample.
+///
+/// Counter records contain periodic interface and system statistics
+/// reported by the sFlow agent.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum CounterRecord {
+    /// Generic interface counters (enterprise=0, format=1).
     GenericInterface(GenericInterface),
+    /// Ethernet-specific interface counters (enterprise=0, format=2).
     EthernetInterface(EthernetInterface),
+    /// Token Ring interface counters (enterprise=0, format=3).
     TokenRing(TokenRing),
+    /// VLAN counters (enterprise=0, format=5).
     Vlan(Vlan),
+    /// Processor/CPU counters (enterprise=0, format=1001).
     Processor(Processor),
+    /// Unrecognized counter record type, preserved as raw bytes.
     Unknown {
+        /// Enterprise code from the record header.
         enterprise: u32,
+        /// Format code from the record header.
         format: u32,
+        /// Raw record data.
         data: Vec<u8>,
     },
 }

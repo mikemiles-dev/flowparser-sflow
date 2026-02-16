@@ -1,22 +1,35 @@
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
+/// Errors that can occur when parsing sFlow datagrams.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum SflowError {
+    /// The input buffer is too short to read the expected field.
     Incomplete {
+        /// Number of bytes available.
         available: usize,
+        /// Description of the field being parsed.
         context: String,
     },
+    /// The datagram version is not sFlow v5.
     UnsupportedVersion {
+        /// The version number found in the datagram header.
         version: u32,
     },
+    /// A structural parse error at a known offset.
     ParseError {
+        /// Byte offset from the start of the datagram.
         offset: usize,
+        /// Description of what was being parsed.
         context: String,
+        /// Description of the error.
         kind: String,
     },
+    /// The datagram contains more samples than the configured limit.
     TooManySamples {
+        /// Number of samples in the datagram.
         count: u32,
+        /// Configured maximum.
         max: u32,
     },
 }

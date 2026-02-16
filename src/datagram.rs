@@ -6,19 +6,32 @@ use std::net::{Ipv4Addr, Ipv6Addr};
 use crate::error::SflowError;
 use crate::samples::{SflowSample, parse_samples};
 
+/// An sFlow agent's network address, either IPv4 or IPv6.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum AddressType {
+    /// IPv4 agent address.
     IPv4(Ipv4Addr),
+    /// IPv6 agent address.
     IPv6(Ipv6Addr),
 }
 
+/// A parsed sFlow v5 datagram containing header fields and samples.
+///
+/// Each datagram is sent by an sFlow agent and contains a header
+/// identifying the agent, plus zero or more flow or counter samples.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SflowDatagram {
+    /// sFlow version (always 5).
     pub version: u32,
+    /// IP address of the sFlow agent.
     pub agent_address: AddressType,
+    /// Sub-agent identifier (disambiguates multiple data sources).
     pub sub_agent_id: u32,
+    /// Sequence number incremented per datagram from this agent.
     pub sequence_number: u32,
+    /// Agent uptime in milliseconds since boot.
     pub uptime: u32,
+    /// Flow and counter samples contained in this datagram.
     pub samples: Vec<SflowSample>,
 }
 
