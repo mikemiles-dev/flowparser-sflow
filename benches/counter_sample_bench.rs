@@ -1,5 +1,5 @@
 use criterion::{Criterion, criterion_group, criterion_main};
-use sflow_parser::SflowParser;
+use flowparser_sflow::SflowParser;
 
 fn bench_parse_counter_sample(c: &mut Criterion) {
     // sFlow v5 datagram with 1 counter sample containing 1 VLAN counter

@@ -1,6 +1,6 @@
+use flowparser_sflow::SflowParser;
 use pcap_parser::traits::PcapReaderIterator;
 use pcap_parser::*;
-use sflow_parser::SflowParser;
 use std::fs::File;
 use std::io::BufReader;
 

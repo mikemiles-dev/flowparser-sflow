@@ -1,5 +1,5 @@
 use criterion::{Criterion, criterion_group, criterion_main};
-use sflow_parser::SflowParser;
+use flowparser_sflow::SflowParser;
 
 fn bench_parse_datagram(c: &mut Criterion) {
     // Minimal sFlow v5 datagram: IPv4 agent, 0 samples

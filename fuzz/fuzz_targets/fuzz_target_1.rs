@@ -1,6 +1,6 @@
 #![no_main]
 use libfuzzer_sys::fuzz_target;
-use sflow_parser::SflowParser;
+use flowparser_sflow::SflowParser;
 
 fuzz_target!(|data: &[u8]| {
     let parser = SflowParser::default();

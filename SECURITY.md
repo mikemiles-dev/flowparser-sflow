@@ -8,7 +8,7 @@
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability in `sflow_parser`, please report it responsibly.
+If you discover a security vulnerability in `flowparser-sflow`, please report it responsibly.
 
 **Do not open a public GitHub issue for security vulnerabilities.**
 
