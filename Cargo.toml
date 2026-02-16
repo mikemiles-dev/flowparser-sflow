@@ -1,5 +1,5 @@
 [package]
-name = "sflow_parser"
+name = "flowparser-sflow"
 description = "Parser for sFlow v5 datagrams"
 version = "0.1.0"
 edition = "2024"
