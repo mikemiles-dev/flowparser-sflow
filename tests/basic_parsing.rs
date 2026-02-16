@@ -1,68 +1,41 @@
 use sflow_parser::*;
-use std::net::Ipv4Addr;
 
-fn build_datagram_with_flow_and_counter() -> Vec<u8> {
-    let mut data = Vec::new();
-    // Header
-    data.extend_from_slice(&5u32.to_be_bytes());
-    data.extend_from_slice(&1u32.to_be_bytes()); // IPv4
-    data.extend_from_slice(&u32::from(Ipv4Addr::new(10, 0, 0, 1)).to_be_bytes());
-    data.extend_from_slice(&0u32.to_be_bytes()); // sub_agent_id
-    data.extend_from_slice(&42u32.to_be_bytes()); // sequence_number
-    data.extend_from_slice(&5000u32.to_be_bytes()); // uptime
-    data.extend_from_slice(&2u32.to_be_bytes()); // 2 samples
-
-    // Flow sample (enterprise=0, format=1) with 1 extended switch record
-    let mut flow_body = Vec::new();
-    flow_body.extend_from_slice(&1u32.to_be_bytes()); // seq
-    flow_body.extend_from_slice(&3u32.to_be_bytes()); // source_id
-    flow_body.extend_from_slice(&256u32.to_be_bytes()); // rate
-    flow_body.extend_from_slice(&1000u32.to_be_bytes()); // pool
-    flow_body.extend_from_slice(&0u32.to_be_bytes()); // drops
-    flow_body.extend_from_slice(&1u32.to_be_bytes()); // input
-    flow_body.extend_from_slice(&2u32.to_be_bytes()); // output
-    flow_body.extend_from_slice(&1u32.to_be_bytes()); // num_records=1
-    // Extended switch record
-    let df = (0u32 << 12) | 1001;
-    flow_body.extend_from_slice(&df.to_be_bytes());
-    flow_body.extend_from_slice(&16u32.to_be_bytes()); // len
-    flow_body.extend_from_slice(&100u32.to_be_bytes());
-    flow_body.extend_from_slice(&0u32.to_be_bytes());
-    flow_body.extend_from_slice(&200u32.to_be_bytes());
-    flow_body.extend_from_slice(&0u32.to_be_bytes());
-
-    let flow_df = (0u32 << 12) | 1;
-    data.extend_from_slice(&flow_df.to_be_bytes());
-    data.extend_from_slice(&(flow_body.len() as u32).to_be_bytes());
-    data.extend_from_slice(&flow_body);
-
-    // Counter sample (enterprise=0, format=2) with 1 VLAN record
-    let mut counter_body = Vec::new();
-    counter_body.extend_from_slice(&1u32.to_be_bytes()); // seq
-    counter_body.extend_from_slice(&1u32.to_be_bytes()); // source_id
-    counter_body.extend_from_slice(&1u32.to_be_bytes()); // num_records=1
-    // VLAN record
-    let vdf = (0u32 << 12) | 5;
-    counter_body.extend_from_slice(&vdf.to_be_bytes());
-    counter_body.extend_from_slice(&28u32.to_be_bytes()); // len
-    counter_body.extend_from_slice(&100u32.to_be_bytes()); // vlan_id
-    counter_body.extend_from_slice(&4096u64.to_be_bytes()); // octets
-    counter_body.extend_from_slice(&50u32.to_be_bytes());
-    counter_body.extend_from_slice(&5u32.to_be_bytes());
-    counter_body.extend_from_slice(&2u32.to_be_bytes());
-    counter_body.extend_from_slice(&0u32.to_be_bytes());
-
-    let counter_df = (0u32 << 12) | 2;
-    data.extend_from_slice(&counter_df.to_be_bytes());
-    data.extend_from_slice(&(counter_body.len() as u32).to_be_bytes());
-    data.extend_from_slice(&counter_body);
-
-    data
+/// Decode a Wireshark-style hex dump into bytes.
+/// Strips offset prefixes (e.g., "0000   ") and whitespace.
+fn h(hex: &str) -> Vec<u8> {
+    let mut out = String::new();
+    for line in hex.lines() {
+        let t = line.trim();
+        if t.is_empty() {
+            continue;
+        }
+        let data = match t.find("  ") {
+            Some(pos) if pos >= 4 && t[..pos].bytes().all(|b| b.is_ascii_hexdigit()) => {
+                &t[pos..]
+            }
+            _ => t,
+        };
+        out.push_str(data);
+    }
+    hex::decode(out.replace(' ', "")).unwrap()
 }
 
 #[test]
 fn test_parse_complete_datagram_with_multiple_sample_types() {
-    let data = build_datagram_with_flow_and_counter();
+    // agent=10.0.0.1 seq=42 uptime=5000 samples=2
+    // flow sample with extended switch + counter sample with VLAN
+    let data = h("\
+        0000   00 00 00 05 00 00 00 01 0a 00 00 01 00 00 00 00\n\
+        0010   00 00 00 2a 00 00 13 88 00 00 00 02 00 00 00 01\n\
+        0020   00 00 00 38 00 00 00 01 00 00 00 03 00 00 01 00\n\
+        0030   00 00 03 e8 00 00 00 00 00 00 00 01 00 00 00 02\n\
+        0040   00 00 00 01 00 00 03 e9 00 00 00 10 00 00 00 64\n\
+        0050   00 00 00 00 00 00 00 c8 00 00 00 00 00 00 00 02\n\
+        0060   00 00 00 30 00 00 00 01 00 00 00 01 00 00 00 01\n\
+        0070   00 00 00 05 00 00 00 1c 00 00 00 64 00 00 00 00\n\
+        0080   00 00 10 00 00 00 00 32 00 00 00 05 00 00 00 02\n\
+        0090   00 00 00 00\
+    ");
     let parser = SflowParser::default();
     let result = parser.parse_bytes(&data);
 
@@ -74,22 +47,17 @@ fn test_parse_complete_datagram_with_multiple_sample_types() {
     assert_eq!(dg.sequence_number, 42);
     assert_eq!(dg.samples.len(), 2);
 
-    // First sample is flow
     assert!(matches!(&dg.samples[0], SflowSample::Flow(_)));
-    // Second sample is counter
     assert!(matches!(&dg.samples[1], SflowSample::Counter(_)));
 }
 
 #[test]
 fn test_parse_zero_sample_datagram() {
-    let mut data = Vec::new();
-    data.extend_from_slice(&5u32.to_be_bytes());
-    data.extend_from_slice(&1u32.to_be_bytes());
-    data.extend_from_slice(&u32::from(Ipv4Addr::new(192, 168, 1, 1)).to_be_bytes());
-    data.extend_from_slice(&0u32.to_be_bytes());
-    data.extend_from_slice(&1u32.to_be_bytes());
-    data.extend_from_slice(&100u32.to_be_bytes());
-    data.extend_from_slice(&0u32.to_be_bytes()); // 0 samples
+    // agent=192.168.1.1 seq=1 uptime=100 samples=0
+    let data = h("\
+        0000   00 00 00 05 00 00 00 01 c0 a8 01 01 00 00 00 00\n\
+        0010   00 00 00 01 00 00 00 64 00 00 00 00\
+    ");
 
     let parser = SflowParser::default();
     let result = parser.parse_bytes(&data);
@@ -99,7 +67,18 @@ fn test_parse_zero_sample_datagram() {
 
 #[test]
 fn test_default_parser_equals_builder() {
-    let data = build_datagram_with_flow_and_counter();
+    let data = h("\
+        0000   00 00 00 05 00 00 00 01 0a 00 00 01 00 00 00 00\n\
+        0010   00 00 00 2a 00 00 13 88 00 00 00 02 00 00 00 01\n\
+        0020   00 00 00 38 00 00 00 01 00 00 00 03 00 00 01 00\n\
+        0030   00 00 03 e8 00 00 00 00 00 00 00 01 00 00 00 02\n\
+        0040   00 00 00 01 00 00 03 e9 00 00 00 10 00 00 00 64\n\
+        0050   00 00 00 00 00 00 00 c8 00 00 00 00 00 00 00 02\n\
+        0060   00 00 00 30 00 00 00 01 00 00 00 01 00 00 00 01\n\
+        0070   00 00 00 05 00 00 00 1c 00 00 00 64 00 00 00 00\n\
+        0080   00 00 10 00 00 00 00 32 00 00 00 05 00 00 00 02\n\
+        0090   00 00 00 00\
+    ");
 
     let default_result = SflowParser::default().parse_bytes(&data);
     let builder_result = SflowParser::builder().build().parse_bytes(&data);

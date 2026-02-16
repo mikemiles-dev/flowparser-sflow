@@ -13,34 +13,45 @@ fn main() {
 
     let file = File::open(&args[1]).expect("Failed to open pcap file");
     let reader = BufReader::new(file);
-    let mut pcap_reader =
-        PcapNGReader::new(65535, reader).expect("Failed to create pcap reader");
 
     let parser = SflowParser::default();
     let mut packet_count = 0;
 
+    // Try pcap-ng first, fall back to legacy pcap
+    let magic = {
+        let f = File::open(&args[1]).expect("Failed to open pcap file");
+        let mut buf = [0u8; 4];
+        use std::io::Read;
+        let mut f = f;
+        f.read_exact(&mut buf).expect("Failed to read file header");
+        u32::from_le_bytes(buf)
+    };
+
+    if magic == 0x0A0D0D0A {
+        // pcap-ng
+        let mut pcap_reader =
+            PcapNGReader::new(65535, reader).expect("Failed to create pcap-ng reader");
+        run_pcapng(&mut pcap_reader, &parser, &mut packet_count);
+    } else {
+        // Legacy pcap (0xa1b2c3d4 or 0xd4c3b2a1)
+        let mut pcap_reader =
+            LegacyPcapReader::new(65535, reader).expect("Failed to create pcap reader");
+        run_legacy(&mut pcap_reader, &parser, &mut packet_count);
+    }
+
+    println!("Parsed {} sFlow datagrams", packet_count);
+}
+
+fn run_pcapng<R: std::io::Read>(
+    pcap_reader: &mut PcapNGReader<R>,
+    parser: &SflowParser,
+    packet_count: &mut usize,
+) {
     loop {
         match pcap_reader.next() {
             Ok((offset, block)) => {
-                match block {
-                    PcapBlockOwned::NG(Block::EnhancedPacket(epb)) => {
-                        // Try to extract UDP payload (skip ethernet + IP + UDP headers)
-                        if let Some(payload) = extract_udp_payload(epb.data) {
-                            let result = parser.parse_bytes(payload);
-                            for datagram in &result.datagrams {
-                                packet_count += 1;
-                                println!(
-                                    "Packet {}: seq={} samples={}",
-                                    packet_count,
-                                    datagram.sequence_number,
-                                    datagram.samples.len()
-                                );
-                            }
-                        }
-                    }
-                    PcapBlockOwned::NG(Block::SectionHeader(_))
-                    | PcapBlockOwned::NG(Block::InterfaceDescription(_)) => {}
-                    _ => {}
+                if let PcapBlockOwned::NG(Block::EnhancedPacket(epb)) = block {
+                    process_packet(epb.data, parser, packet_count);
                 }
                 pcap_reader.consume(offset);
             }
@@ -54,15 +65,51 @@ fn main() {
             }
         }
     }
+}
 
-    println!("Parsed {} sFlow datagrams", packet_count);
+fn run_legacy<R: std::io::Read>(
+    pcap_reader: &mut LegacyPcapReader<R>,
+    parser: &SflowParser,
+    packet_count: &mut usize,
+) {
+    loop {
+        match pcap_reader.next() {
+            Ok((offset, block)) => {
+                if let PcapBlockOwned::Legacy(packet) = block {
+                    process_packet(packet.data, parser, packet_count);
+                }
+                pcap_reader.consume(offset);
+            }
+            Err(PcapError::Eof) => break,
+            Err(PcapError::Incomplete(_)) => {
+                pcap_reader.refill().expect("Failed to refill");
+            }
+            Err(e) => {
+                eprintln!("Error reading pcap: {:?}", e);
+                break;
+            }
+        }
+    }
+}
+
+fn process_packet(data: &[u8], parser: &SflowParser, packet_count: &mut usize) {
+    if let Some(payload) = extract_udp_payload(data) {
+        let result = parser.parse_bytes(payload);
+        for datagram in &result.datagrams {
+            *packet_count += 1;
+            println!(
+                "Packet {}: seq={} samples={}",
+                packet_count,
+                datagram.sequence_number,
+                datagram.samples.len()
+            );
+        }
+    }
 }
 
 fn extract_udp_payload(data: &[u8]) -> Option<&[u8]> {
     use etherparse::SlicedPacket;
     let packet = SlicedPacket::from_ethernet(data).ok()?;
-    // etherparse 0.19: payload is accessed via the net/transport slices
-    // After stripping headers, remaining data is the UDP payload
     match packet.transport {
         Some(etherparse::TransportSlice::Udp(udp)) => Some(udp.payload()),
         _ => None,
