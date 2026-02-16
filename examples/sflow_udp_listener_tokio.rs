@@ -1,4 +1,4 @@
-use sflow_parser::SflowParser;
+use flowparser_sflow::SflowParser;
 use tokio::net::UdpSocket;
 
 #[tokio::main]

@@ -1,4 +1,4 @@
-use sflow_parser::SflowParser;
+use flowparser_sflow::SflowParser;
 use std::net::UdpSocket;
 use std::sync::Arc;
 use std::thread;

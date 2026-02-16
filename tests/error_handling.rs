@@ -1,4 +1,4 @@
-use sflow_parser::*;
+use flowparser_sflow::*;
 
 /// Decode a Wireshark-style hex dump into bytes.
 /// Strips offset prefixes (e.g., "0000   ") and whitespace.

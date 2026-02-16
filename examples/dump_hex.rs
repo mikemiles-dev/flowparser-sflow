@@ -3,22 +3,22 @@
 //!
 //! Usage: cargo run --example dump_hex -- <pcap-file>
 
-use pcap_parser::traits::PcapReaderIterator;
-use pcap_parser::*;
 #[allow(unused_imports)]
-use sflow_parser::counter_records::{
+use flowparser_sflow::counter_records::{
     CounterRecord, EthernetInterface, GenericInterface, Processor, TokenRing, Vlan,
 };
-use sflow_parser::datagram::AddressType;
+use flowparser_sflow::datagram::AddressType;
 #[allow(unused_imports)]
-use sflow_parser::flow_records::{
+use flowparser_sflow::flow_records::{
     ExtendedGateway, ExtendedRouter, ExtendedSwitch, ExtendedUrl, ExtendedUser, FlowRecord,
     RawPacketHeader, SampledEthernet, SampledIpv4, SampledIpv6,
 };
-use sflow_parser::samples::{
+use flowparser_sflow::samples::{
     CounterSample, ExpandedCounterSample, ExpandedFlowSample, FlowSample,
 };
-use sflow_parser::{SflowDatagram, SflowParser, SflowSample};
+use flowparser_sflow::{SflowDatagram, SflowParser, SflowSample};
+use pcap_parser::traits::PcapReaderIterator;
+use pcap_parser::*;
 use std::fs::File;
 use std::io::BufReader;
 use std::net::Ipv4Addr;

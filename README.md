@@ -1,4 +1,4 @@
-# sflow_parser
+# flowparser-sflow
 
 [![Rust](https://github.com/mikemiles-dev/sflow_parser/actions/workflows/rust.yml/badge.svg)](https://github.com/mikemiles-dev/sflow_parser/actions/workflows/rust.yml)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/License-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE-MIT)
@@ -21,13 +21,13 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-sflow_parser = "0.1.0"
+flowparser-sflow = "0.1.0"
 ```
 
 ### Basic Parsing
 
 ```rust,ignore
-use sflow_parser::{SflowParser, SflowSample};
+use flowparser_sflow::{SflowParser, SflowSample};
 
 let parser = SflowParser::default();
 
@@ -63,7 +63,7 @@ if let Some(err) = &result.error {
 ### JSON Serialization
 
 ```rust,ignore
-use sflow_parser::SflowParser;
+use flowparser_sflow::SflowParser;
 
 let parser = SflowParser::default();
 let result = parser.parse_bytes(&datagram_bytes);
@@ -76,7 +76,7 @@ println!("{}", json);
 ### Builder Configuration
 
 ```rust
-use sflow_parser::SflowParser;
+use flowparser_sflow::SflowParser;
 
 // Limit max samples per datagram (DoS protection)
 let parser = SflowParser::builder()
@@ -87,7 +87,7 @@ let parser = SflowParser::builder()
 ### UDP Listener Example
 
 ```rust,no_run
-use sflow_parser::SflowParser;
+use flowparser_sflow::SflowParser;
 use std::net::UdpSocket;
 
 let socket = UdpSocket::bind("0.0.0.0:6343").unwrap();

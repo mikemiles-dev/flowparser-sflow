@@ -1,4 +1,4 @@
-use sflow_parser::*;
+use flowparser_sflow::*;
 use std::net::Ipv4Addr;
 
 /// Decode a Wireshark-style hex dump into bytes.

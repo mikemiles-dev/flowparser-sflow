@@ -42,7 +42,7 @@ pub struct ParseResult {
 /// # Examples
 ///
 /// ```
-/// use sflow_parser::SflowParser;
+/// use flowparser_sflow::SflowParser;
 ///
 /// let parser = SflowParser::default();
 /// let result = parser.parse_bytes(&[/* sflow datagram bytes */]);
