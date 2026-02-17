@@ -29,7 +29,7 @@ pcap-parser = "0.17"
 etherparse = "0.19"
 
 [[bench]]
-name = "sflow_parser_bench"
+name = "flowparser_sflow_bench"
 harness = false
 
 [[bench]]
