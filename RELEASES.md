@@ -1,5 +1,9 @@
 # Releases
 
+## 0.1.1
+
+- Added crates.io badge to README
+
 ## 0.1.0 (Initial Release)
 
 - sFlow v5 datagram parsing with IPv4 and IPv6 agent addresses
