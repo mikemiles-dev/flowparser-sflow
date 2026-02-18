@@ -89,9 +89,7 @@ impl<'de> Deserialize<'de> for ParseErrorKind {
                     "IsNot" => nom::error::ErrorKind::IsNot,
                     "IsA" => nom::error::ErrorKind::IsA,
                     "SeparatedList" => nom::error::ErrorKind::SeparatedList,
-                    "SeparatedNonEmptyList" => {
-                        nom::error::ErrorKind::SeparatedNonEmptyList
-                    }
+                    "SeparatedNonEmptyList" => nom::error::ErrorKind::SeparatedNonEmptyList,
                     "Many0" => nom::error::ErrorKind::Many0,
                     "Many1" => nom::error::ErrorKind::Many1,
                     "ManyTill" => nom::error::ErrorKind::ManyTill,
