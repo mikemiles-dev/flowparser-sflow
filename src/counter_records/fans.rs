@@ -17,5 +17,12 @@ pub(crate) fn parse_fans(input: &[u8]) -> IResult<&[u8], Fans> {
     let (input, failed) = be_u32(input)?;
     let (input, speed) = be_u32(input)?;
 
-    Ok((input, Fans { total, failed, speed }))
+    Ok((
+        input,
+        Fans {
+            total,
+            failed,
+            speed,
+        },
+    ))
 }

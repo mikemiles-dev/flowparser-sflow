@@ -14,11 +14,5 @@ pub(crate) fn parse_virt_memory(input: &[u8]) -> IResult<&[u8], VirtMemory> {
     let (input, memory) = be_u64(input)?;
     let (input, max_memory) = be_u64(input)?;
 
-    Ok((
-        input,
-        VirtMemory {
-            memory,
-            max_memory,
-        },
-    ))
+    Ok((input, VirtMemory { memory, max_memory }))
 }
