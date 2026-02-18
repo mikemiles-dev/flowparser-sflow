@@ -13,7 +13,7 @@ pub use flow_sample::{ExpandedFlowSample, FlowSample};
 /// Each datagram can contain a mix of flow samples (packet-level data)
 /// and counter samples (interface statistics). Expanded variants use
 /// separate fields for source ID type and index instead of a packed u32.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum SflowSample {
     /// Standard flow sample (enterprise=0, format=1).
     Flow(FlowSample),

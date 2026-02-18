@@ -1,7 +1,9 @@
 pub mod app_operations;
 pub mod app_resources;
 pub mod app_workers;
+pub mod energy;
 pub mod ethernet_interface;
+pub mod fans;
 pub mod generic_interface;
 pub mod host_adapters;
 pub mod host_cpu;
@@ -11,7 +13,10 @@ pub mod host_memory;
 pub mod host_net_io;
 pub mod host_parent;
 pub mod http_counters;
+pub mod humidity;
+pub mod ib_counters;
 pub mod ieee80211_counters;
+pub mod jmx_runtime;
 pub mod jvm_statistics;
 pub mod lag_port_stats;
 pub mod memcache_counters;
@@ -20,13 +25,23 @@ pub mod mib2_ip_group;
 pub mod mib2_tcp_group;
 pub mod mib2_udp_group;
 pub mod of_port;
+pub mod ovs_dp_stats;
 pub mod port_name;
 pub mod processor;
+pub mod queue_length;
 pub mod radio_utilization;
 pub mod sfp;
+pub mod slow_path_counts;
+pub mod temperature;
 pub mod token_ring;
 pub mod vg_counters;
+pub mod virt_cpu;
+pub mod virt_disk_io;
+pub mod virt_memory;
+pub mod virt_net_io;
+pub mod virt_node;
 pub mod vlan;
+pub mod xen_vif;
 
 use nom::IResult;
 use nom::number::complete::be_u32;
@@ -35,17 +50,22 @@ use serde::{Deserialize, Serialize};
 pub use app_operations::AppOperations;
 pub use app_resources::AppResources;
 pub use app_workers::AppWorkers;
+pub use energy::Energy;
 pub use ethernet_interface::EthernetInterface;
+pub use fans::Fans;
 pub use generic_interface::GenericInterface;
 pub use host_adapters::HostAdapters;
 pub use host_cpu::HostCpu;
-pub use host_descr::HostDescr;
+pub use host_descr::{HostDescr, MachineType, OsName};
 pub use host_disk_io::HostDiskIo;
 pub use host_memory::HostMemory;
 pub use host_net_io::HostNetIo;
 pub use host_parent::HostParent;
 pub use http_counters::HttpCounters;
+pub use humidity::Humidity;
+pub use ib_counters::IbCounters;
 pub use ieee80211_counters::Ieee80211Counters;
+pub use jmx_runtime::JmxRuntime;
 pub use jvm_statistics::JvmStatistics;
 pub use lag_port_stats::LagPortStats;
 pub use memcache_counters::MemcacheCounters;
@@ -54,19 +74,29 @@ pub use mib2_ip_group::Mib2IpGroup;
 pub use mib2_tcp_group::Mib2TcpGroup;
 pub use mib2_udp_group::Mib2UdpGroup;
 pub use of_port::OfPort;
+pub use ovs_dp_stats::OvsDpStats;
 pub use port_name::PortName;
 pub use processor::Processor;
+pub use queue_length::QueueLength;
 pub use radio_utilization::RadioUtilization;
 pub use sfp::Sfp;
+pub use slow_path_counts::SlowPathCounts;
+pub use temperature::Temperature;
 pub use token_ring::TokenRing;
 pub use vg_counters::VgCounters;
+pub use virt_cpu::{VirtCpu, VirtDomainState};
+pub use virt_disk_io::VirtDiskIo;
+pub use virt_memory::VirtMemory;
+pub use virt_net_io::VirtNetIo;
+pub use virt_node::VirtNode;
 pub use vlan::Vlan;
+pub use xen_vif::XenVif;
 
 /// A counter record within a counter sample.
 ///
 /// Counter records contain periodic interface and system statistics
 /// reported by the sFlow agent.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum CounterRecord {
     /// Generic interface counters (enterprise=0, format=1).
     GenericInterface(GenericInterface),
@@ -82,12 +112,18 @@ pub enum CounterRecord {
     Ieee80211Counters(Ieee80211Counters),
     /// LAG port statistics (enterprise=0, format=7).
     LagPortStats(LagPortStats),
+    /// Slow path counts (enterprise=0, format=8).
+    SlowPathCounts(SlowPathCounts),
+    /// InfiniBand counters (enterprise=0, format=9).
+    IbCounters(IbCounters),
     /// SFP/optical transceiver counters (enterprise=0, format=10).
     Sfp(Sfp),
     /// Processor/CPU counters (enterprise=0, format=1001).
     Processor(Processor),
     /// Radio utilization counters (enterprise=0, format=1002).
     RadioUtilization(RadioUtilization),
+    /// Queue length histogram (enterprise=0, format=1003).
+    QueueLength(QueueLength),
     /// OpenFlow port mapping (enterprise=0, format=1004).
     OfPort(OfPort),
     /// Port name (enterprise=0, format=1005).
@@ -106,6 +142,16 @@ pub enum CounterRecord {
     HostDiskIo(HostDiskIo),
     /// Host network I/O counters (enterprise=0, format=2006).
     HostNetIo(HostNetIo),
+    /// Virtual node statistics (enterprise=0, format=2100).
+    VirtNode(VirtNode),
+    /// Virtual CPU statistics (enterprise=0, format=2101).
+    VirtCpu(VirtCpu),
+    /// Virtual memory statistics (enterprise=0, format=2102).
+    VirtMemory(VirtMemory),
+    /// Virtual disk I/O statistics (enterprise=0, format=2103).
+    VirtDiskIo(VirtDiskIo),
+    /// Virtual network I/O statistics (enterprise=0, format=2104).
+    VirtNetIo(VirtNetIo),
     /// MIB-II IP group counters (enterprise=0, format=2007).
     Mib2IpGroup(Mib2IpGroup),
     /// MIB-II ICMP group counters (enterprise=0, format=2008).
@@ -114,6 +160,8 @@ pub enum CounterRecord {
     Mib2TcpGroup(Mib2TcpGroup),
     /// MIB-II UDP group counters (enterprise=0, format=2010).
     Mib2UdpGroup(Mib2UdpGroup),
+    /// JMX runtime information (enterprise=0, format=2105).
+    JmxRuntime(JmxRuntime),
     /// JVM statistics counters (enterprise=0, format=2106).
     JvmStatistics(JvmStatistics),
     /// HTTP method and status counters (enterprise=0, format=2201).
@@ -126,6 +174,18 @@ pub enum CounterRecord {
     MemcacheCounters(MemcacheCounters),
     /// Application worker counters (enterprise=0, format=2206).
     AppWorkers(AppWorkers),
+    /// Open vSwitch datapath statistics (enterprise=0, format=2207).
+    OvsDpStats(OvsDpStats),
+    /// Energy consumption counters (enterprise=0, format=3000).
+    Energy(Energy),
+    /// Temperature sensor counters (enterprise=0, format=3001).
+    Temperature(Temperature),
+    /// Humidity sensor counters (enterprise=0, format=3002).
+    Humidity(Humidity),
+    /// Fan status counters (enterprise=0, format=3003).
+    Fans(Fans),
+    /// XenServer virtual interface metadata (enterprise=4300, format=2).
+    XenVif(XenVif),
     /// Unrecognized counter record type, preserved as raw bytes.
     Unknown {
         /// Enterprise code from the record header.
@@ -193,6 +253,14 @@ pub(crate) fn parse_counter_records(
                     let (_, r) = lag_port_stats::parse_lag_port_stats(record_data)?;
                     CounterRecord::LagPortStats(r)
                 }
+                8 => {
+                    let (_, r) = slow_path_counts::parse_slow_path_counts(record_data)?;
+                    CounterRecord::SlowPathCounts(r)
+                }
+                9 => {
+                    let (_, r) = ib_counters::parse_ib_counters(record_data)?;
+                    CounterRecord::IbCounters(r)
+                }
                 10 => {
                     let (_, r) = sfp::parse_sfp(record_data)?;
                     CounterRecord::Sfp(r)
@@ -200,6 +268,10 @@ pub(crate) fn parse_counter_records(
                 1001 => {
                     let (_, r) = processor::parse_processor(record_data)?;
                     CounterRecord::Processor(r)
+                }
+                1003 => {
+                    let (_, r) = queue_length::parse_queue_length(record_data)?;
+                    CounterRecord::QueueLength(r)
                 }
                 1002 => {
                     let (_, r) = radio_utilization::parse_radio_utilization(record_data)?;
@@ -241,6 +313,26 @@ pub(crate) fn parse_counter_records(
                     let (_, r) = host_net_io::parse_host_net_io(record_data)?;
                     CounterRecord::HostNetIo(r)
                 }
+                2100 => {
+                    let (_, r) = virt_node::parse_virt_node(record_data)?;
+                    CounterRecord::VirtNode(r)
+                }
+                2101 => {
+                    let (_, r) = virt_cpu::parse_virt_cpu(record_data)?;
+                    CounterRecord::VirtCpu(r)
+                }
+                2102 => {
+                    let (_, r) = virt_memory::parse_virt_memory(record_data)?;
+                    CounterRecord::VirtMemory(r)
+                }
+                2103 => {
+                    let (_, r) = virt_disk_io::parse_virt_disk_io(record_data)?;
+                    CounterRecord::VirtDiskIo(r)
+                }
+                2104 => {
+                    let (_, r) = virt_net_io::parse_virt_net_io(record_data)?;
+                    CounterRecord::VirtNetIo(r)
+                }
                 2007 => {
                     let (_, r) = mib2_ip_group::parse_mib2_ip_group(record_data)?;
                     CounterRecord::Mib2IpGroup(r)
@@ -256,6 +348,10 @@ pub(crate) fn parse_counter_records(
                 2010 => {
                     let (_, r) = mib2_udp_group::parse_mib2_udp_group(record_data)?;
                     CounterRecord::Mib2UdpGroup(r)
+                }
+                2105 => {
+                    let (_, r) = jmx_runtime::parse_jmx_runtime(record_data)?;
+                    CounterRecord::JmxRuntime(r)
                 }
                 2106 => {
                     let (_, r) = jvm_statistics::parse_jvm_statistics(record_data)?;
@@ -281,6 +377,26 @@ pub(crate) fn parse_counter_records(
                     let (_, r) = app_workers::parse_app_workers(record_data)?;
                     CounterRecord::AppWorkers(r)
                 }
+                2207 => {
+                    let (_, r) = ovs_dp_stats::parse_ovs_dp_stats(record_data)?;
+                    CounterRecord::OvsDpStats(r)
+                }
+                3000 => {
+                    let (_, r) = energy::parse_energy(record_data)?;
+                    CounterRecord::Energy(r)
+                }
+                3001 => {
+                    let (_, r) = temperature::parse_temperature(record_data)?;
+                    CounterRecord::Temperature(r)
+                }
+                3002 => {
+                    let (_, r) = humidity::parse_humidity(record_data)?;
+                    CounterRecord::Humidity(r)
+                }
+                3003 => {
+                    let (_, r) = fans::parse_fans(record_data)?;
+                    CounterRecord::Fans(r)
+                }
                 _ => CounterRecord::Unknown {
                     enterprise,
                     format,
@@ -288,10 +404,16 @@ pub(crate) fn parse_counter_records(
                 },
             }
         } else {
-            CounterRecord::Unknown {
-                enterprise,
-                format,
-                data: record_data.to_vec(),
+            match (enterprise, format) {
+                (4300, 2) => {
+                    let (_, r) = xen_vif::parse_xen_vif(record_data)?;
+                    CounterRecord::XenVif(r)
+                }
+                _ => CounterRecord::Unknown {
+                    enterprise,
+                    format,
+                    data: record_data.to_vec(),
+                },
             }
         };
 

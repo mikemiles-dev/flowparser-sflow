@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::counter_records::{CounterRecord, parse_counter_records};
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CounterSample {
     pub sequence_number: u32,
     pub source_id_type: u32,
@@ -12,7 +12,7 @@ pub struct CounterSample {
     pub records: Vec<CounterRecord>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ExpandedCounterSample {
     pub sequence_number: u32,
     pub source_id_type: u32,

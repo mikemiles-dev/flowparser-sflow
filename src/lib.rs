@@ -23,7 +23,7 @@ use serde::{Deserialize, Serialize};
 /// Contains all successfully parsed datagrams and an optional error
 /// if parsing failed partway through. This allows partial results
 /// when a buffer contains multiple datagrams and one is malformed.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ParseResult {
     /// Successfully parsed sFlow datagrams.
     pub datagrams: Vec<SflowDatagram>,
