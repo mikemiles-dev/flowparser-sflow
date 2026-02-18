@@ -160,53 +160,49 @@ fn test_real_unknown_http_records() {
     assert_eq!(fs0.source_id_index, 80);
     assert_eq!(fs0.records.len(), 2);
 
-    // Both records are Unknown (HTTP extension formats 2100, 2206)
-    let (e0, f0, d0) = match &fs0.records[0] {
-        FlowRecord::Unknown {
-            enterprise,
-            format,
-            data,
-        } => (*enterprise, *format, data.len()),
-        other => panic!("expected Unknown, got {other:?}"),
+    // Record 0: ExtendedSocketIpv4 (format 2100)
+    let sock0 = match &fs0.records[0] {
+        FlowRecord::ExtendedSocketIpv4(s) => s,
+        other => panic!("expected ExtendedSocketIpv4, got {other:?}"),
     };
-    assert_eq!((e0, f0, d0), (0, 2100, 20));
+    assert_eq!(sock0.protocol, 6); // TCP
+    assert_eq!(sock0.local_ip, Ipv4Addr::new(10, 0, 0, 150));
+    assert_eq!(sock0.remote_ip, Ipv4Addr::new(10, 0, 0, 152));
+    assert_eq!(sock0.local_port, 80);
+    assert_eq!(sock0.remote_port, 42751);
 
-    let (e1, f1, d1) = match &fs0.records[1] {
-        FlowRecord::Unknown {
-            enterprise,
-            format,
-            data,
-        } => (*enterprise, *format, data.len()),
-        other => panic!("expected Unknown, got {other:?}"),
+    // Record 1: HttpRequest (format 2206)
+    let http0 = match &fs0.records[1] {
+        FlowRecord::HttpRequest(h) => h,
+        other => panic!("expected HttpRequest, got {other:?}"),
     };
-    assert_eq!((e1, f1, d1), (0, 2206, 120));
+    assert_eq!(http0.method, 2); // GET
+    assert_eq!(http0.uri, "/images/quill.png");
+    assert_eq!(http0.host, "10.0.0.150");
+    assert_eq!(http0.status, 200);
 
-    // Sample 1: Flow with same Unknown record formats
+    // Sample 1: Flow with same parsed record formats
     let fs1 = match &dg.samples[1] {
         SflowSample::Flow(fs) => fs,
         other => panic!("expected Flow, got {other:?}"),
     };
     assert_eq!(fs1.records.len(), 2);
 
-    let (e2, f2, d2) = match &fs1.records[0] {
-        FlowRecord::Unknown {
-            enterprise,
-            format,
-            data,
-        } => (*enterprise, *format, data.len()),
-        other => panic!("expected Unknown, got {other:?}"),
+    // Record 0: ExtendedSocketIpv4
+    let sock1 = match &fs1.records[0] {
+        FlowRecord::ExtendedSocketIpv4(s) => s,
+        other => panic!("expected ExtendedSocketIpv4, got {other:?}"),
     };
-    assert_eq!((e2, f2, d2), (0, 2100, 20));
+    assert_eq!(sock1.protocol, 6);
+    assert_eq!(sock1.local_port, 80);
 
-    let (e3, f3, d3) = match &fs1.records[1] {
-        FlowRecord::Unknown {
-            enterprise,
-            format,
-            data,
-        } => (*enterprise, *format, data.len()),
-        other => panic!("expected Unknown, got {other:?}"),
+    // Record 1: HttpRequest
+    let http1 = match &fs1.records[1] {
+        FlowRecord::HttpRequest(h) => h,
+        other => panic!("expected HttpRequest, got {other:?}"),
     };
-    assert_eq!((e3, f3, d3), (0, 2206, 132));
+    assert_eq!(http1.uri, "/games/puzzles.php");
+    assert_eq!(http1.status, 200);
 }
 
 #[test]
@@ -297,27 +293,19 @@ fn test_real_mixed_samples_with_three_record_flow() {
     };
     assert_eq!(fs2.records.len(), 3);
 
-    // Record 0: Unknown(0:1030)
-    match &fs2.records[0] {
-        FlowRecord::Unknown {
-            enterprise, format, ..
-        } => {
-            assert_eq!(*enterprise, 0);
-            assert_eq!(*format, 1030);
-        }
-        other => panic!("expected Unknown, got {other:?}"),
-    }
+    // Record 0: ExtendedVniIngress (format 1030)
+    let vni_in = match &fs2.records[0] {
+        FlowRecord::ExtendedVniIngress(v) => v,
+        other => panic!("expected ExtendedVniIngress, got {other:?}"),
+    };
+    assert_eq!(vni_in.vni, 6000);
 
-    // Record 1: Unknown(0:1029)
-    match &fs2.records[1] {
-        FlowRecord::Unknown {
-            enterprise, format, ..
-        } => {
-            assert_eq!(*enterprise, 0);
-            assert_eq!(*format, 1029);
-        }
-        other => panic!("expected Unknown, got {other:?}"),
-    }
+    // Record 1: ExtendedVniEgress (format 1029)
+    let vni_out = match &fs2.records[1] {
+        FlowRecord::ExtendedVniEgress(v) => v,
+        other => panic!("expected ExtendedVniEgress, got {other:?}"),
+    };
+    assert_eq!(vni_out.vni, 6000);
 
     // Record 2: RawPacketHeader
     assert!(matches!(&fs2.records[2], FlowRecord::RawPacketHeader(_)));
