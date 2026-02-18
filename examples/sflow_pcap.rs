@@ -107,6 +107,7 @@ fn process_packet(data: &[u8], parser: &SflowParser, packet_count: &mut usize) {
                 datagram.sequence_number,
                 datagram.samples.len()
             );
+            println!("{:?}", datagram);
         }
     }
 }

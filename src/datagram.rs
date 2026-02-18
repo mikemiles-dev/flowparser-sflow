@@ -3,7 +3,7 @@ use nom::number::complete::{be_u32, be_u64};
 use serde::{Deserialize, Serialize};
 use std::net::{Ipv4Addr, Ipv6Addr};
 
-use crate::error::SflowError;
+use crate::error::{ParseContext, ParseErrorKind, SflowError};
 use crate::samples::{SflowSample, parse_samples};
 
 /// An sFlow address, either IPv4 or IPv6.
@@ -69,7 +69,8 @@ pub(crate) fn parse_datagram(
     let (input, version) = be_u32(input).map_err(|_: nom::Err<nom::error::Error<&[u8]>>| {
         SflowError::Incomplete {
             available: original.len(),
-            context: "datagram header version".to_string(),
+            expected: None,
+            context: ParseContext::DatagramHeaderVersion,
         }
     })?;
 
@@ -81,8 +82,8 @@ pub(crate) fn parse_datagram(
         parse_address(input).map_err(|_: nom::Err<nom::error::Error<&[u8]>>| {
             SflowError::ParseError {
                 offset: original.len() - input.len(),
-                context: "agent address".to_string(),
-                kind: "invalid address type".to_string(),
+                context: ParseContext::AgentAddress,
+                kind: ParseErrorKind::InvalidAddressType,
             }
         })?;
 
@@ -90,7 +91,8 @@ pub(crate) fn parse_datagram(
         be_u32(input).map_err(|_: nom::Err<nom::error::Error<&[u8]>>| {
             SflowError::Incomplete {
                 available: input.len(),
-                context: "sub_agent_id".to_string(),
+                expected: None,
+                context: ParseContext::SubAgentId,
             }
         })?;
 
@@ -98,14 +100,16 @@ pub(crate) fn parse_datagram(
         be_u32(input).map_err(|_: nom::Err<nom::error::Error<&[u8]>>| {
             SflowError::Incomplete {
                 available: input.len(),
-                context: "sequence_number".to_string(),
+                expected: None,
+                context: ParseContext::SequenceNumber,
             }
         })?;
 
     let (input, uptime) = be_u32(input).map_err(|_: nom::Err<nom::error::Error<&[u8]>>| {
         SflowError::Incomplete {
             available: input.len(),
-            context: "uptime".to_string(),
+            expected: None,
+            context: ParseContext::Uptime,
         }
     })?;
 
@@ -113,7 +117,8 @@ pub(crate) fn parse_datagram(
         be_u32(input).map_err(|_: nom::Err<nom::error::Error<&[u8]>>| {
             SflowError::Incomplete {
                 available: input.len(),
-                context: "num_samples".to_string(),
+                expected: None,
+                context: ParseContext::NumSamples,
             }
         })?;
 

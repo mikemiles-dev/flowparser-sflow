@@ -176,6 +176,9 @@ fn print_flow_record(idx: usize, rec: &FlowRecord) {
                 data.len()
             );
         }
+        other => {
+            println!("  Record[{idx}]: {other:?}");
+        }
     }
 }
 
@@ -272,6 +275,9 @@ fn print_counter_record(idx: usize, rec: &CounterRecord) {
                 "  Record[{idx}]: Unknown {{ enterprise={enterprise}, format={format}, data_len={} }}",
                 data.len()
             );
+        }
+        other => {
+            println!("  Record[{idx}]: {other:?}");
         }
     }
 }

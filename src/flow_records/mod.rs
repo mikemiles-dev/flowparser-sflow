@@ -1,8 +1,34 @@
+pub mod app_operation;
+pub mod extended_80211_payload;
+pub mod extended_80211_rx;
+pub mod extended_80211_tx;
+pub mod extended_acl;
+pub mod extended_decapsulate;
+pub mod extended_egress_queue;
+pub mod extended_function;
 pub mod extended_gateway;
+pub mod extended_mpls;
+pub mod extended_mpls_ftn;
+pub mod extended_mpls_ldp_fec;
+pub mod extended_mpls_tunnel;
+pub mod extended_mpls_vc;
+pub mod extended_nat;
+pub mod extended_proxy_request;
+pub mod extended_proxy_socket_ipv4;
+pub mod extended_proxy_socket_ipv6;
+pub mod extended_queue;
 pub mod extended_router;
+pub mod extended_socket_ipv4;
+pub mod extended_socket_ipv6;
 pub mod extended_switch;
+pub mod extended_transit;
 pub mod extended_url;
 pub mod extended_user;
+pub mod extended_vlan_tunnel;
+pub mod extended_vni;
+pub mod http_request;
+pub mod jvm_runtime;
+pub mod memcache_operation;
 pub mod raw_packet_header;
 pub mod sampled_ethernet;
 pub mod sampled_ipv4;
@@ -13,11 +39,37 @@ use nom::bytes::complete::take;
 use nom::number::complete::be_u32;
 use serde::{Deserialize, Serialize};
 
+pub use app_operation::AppOperation;
+pub use extended_80211_payload::Extended80211Payload;
+pub use extended_80211_rx::Extended80211Rx;
+pub use extended_80211_tx::Extended80211Tx;
+pub use extended_acl::ExtendedAcl;
+pub use extended_decapsulate::{ExtendedDecapsulateEgress, ExtendedDecapsulateIngress};
+pub use extended_egress_queue::ExtendedEgressQueue;
+pub use extended_function::ExtendedFunction;
 pub use extended_gateway::ExtendedGateway;
+pub use extended_mpls::ExtendedMpls;
+pub use extended_mpls_ftn::ExtendedMplsFtn;
+pub use extended_mpls_ldp_fec::ExtendedMplsLdpFec;
+pub use extended_mpls_tunnel::ExtendedMplsTunnel;
+pub use extended_mpls_vc::ExtendedMplsVc;
+pub use extended_nat::ExtendedNat;
+pub use extended_proxy_request::ExtendedProxyRequest;
+pub use extended_proxy_socket_ipv4::ExtendedProxySocketIpv4;
+pub use extended_proxy_socket_ipv6::ExtendedProxySocketIpv6;
+pub use extended_queue::ExtendedQueue;
 pub use extended_router::ExtendedRouter;
+pub use extended_socket_ipv4::ExtendedSocketIpv4;
+pub use extended_socket_ipv6::ExtendedSocketIpv6;
 pub use extended_switch::ExtendedSwitch;
+pub use extended_transit::ExtendedTransit;
 pub use extended_url::ExtendedUrl;
 pub use extended_user::ExtendedUser;
+pub use extended_vlan_tunnel::ExtendedVlanTunnel;
+pub use extended_vni::{ExtendedVniEgress, ExtendedVniIngress};
+pub use http_request::HttpRequest;
+pub use jvm_runtime::JvmRuntime;
+pub use memcache_operation::MemcacheOperation;
 pub use raw_packet_header::RawPacketHeader;
 pub use sampled_ethernet::SampledEthernet;
 pub use sampled_ipv4::SampledIpv4;
@@ -47,6 +99,74 @@ pub enum FlowRecord {
     ExtendedUser(ExtendedUser),
     /// Extended URL data — URL and host strings (enterprise=0, format=1005).
     ExtendedUrl(ExtendedUrl),
+    /// Extended MPLS data — next hop and label stacks (enterprise=0, format=1006).
+    ExtendedMpls(ExtendedMpls),
+    /// Extended NAT data — translated source and destination addresses (enterprise=0, format=1007).
+    ExtendedNat(ExtendedNat),
+    /// Extended MPLS tunnel data (enterprise=0, format=1008).
+    ExtendedMplsTunnel(ExtendedMplsTunnel),
+    /// Extended MPLS virtual circuit data (enterprise=0, format=1009).
+    ExtendedMplsVc(ExtendedMplsVc),
+    /// Extended MPLS FEC to NHLFE mapping (enterprise=0, format=1010).
+    ExtendedMplsFtn(ExtendedMplsFtn),
+    /// Extended MPLS LDP FEC data (enterprise=0, format=1011).
+    ExtendedMplsLdpFec(ExtendedMplsLdpFec),
+    /// Extended VLAN tunnel data — 802.1Q-in-Q stack (enterprise=0, format=1012).
+    ExtendedVlanTunnel(ExtendedVlanTunnel),
+    /// Extended 802.11 payload data (enterprise=0, format=1013).
+    Extended80211Payload(Extended80211Payload),
+    /// Extended 802.11 receive data (enterprise=0, format=1014).
+    Extended80211Rx(Extended80211Rx),
+    /// Extended 802.11 transmit data (enterprise=0, format=1015).
+    Extended80211Tx(Extended80211Tx),
+    /// Extended L2 tunnel egress — reuses sampled Ethernet (enterprise=0, format=1021).
+    ExtendedL2TunnelEgress(SampledEthernet),
+    /// Extended L2 tunnel ingress — reuses sampled Ethernet (enterprise=0, format=1022).
+    ExtendedL2TunnelIngress(SampledEthernet),
+    /// Extended IPv4 tunnel egress — reuses sampled IPv4 (enterprise=0, format=1023).
+    ExtendedIpv4TunnelEgress(SampledIpv4),
+    /// Extended IPv4 tunnel ingress — reuses sampled IPv4 (enterprise=0, format=1024).
+    ExtendedIpv4TunnelIngress(SampledIpv4),
+    /// Extended IPv6 tunnel egress — reuses sampled IPv6 (enterprise=0, format=1025).
+    ExtendedIpv6TunnelEgress(SampledIpv6),
+    /// Extended IPv6 tunnel ingress — reuses sampled IPv6 (enterprise=0, format=1026).
+    ExtendedIpv6TunnelIngress(SampledIpv6),
+    /// Extended decapsulate egress data (enterprise=0, format=1027).
+    ExtendedDecapsulateEgress(ExtendedDecapsulateEgress),
+    /// Extended decapsulate ingress data (enterprise=0, format=1028).
+    ExtendedDecapsulateIngress(ExtendedDecapsulateIngress),
+    /// Extended VNI egress data (enterprise=0, format=1029).
+    ExtendedVniEgress(ExtendedVniEgress),
+    /// Extended VNI ingress data (enterprise=0, format=1030).
+    ExtendedVniIngress(ExtendedVniIngress),
+    /// Extended egress queue identifier (enterprise=0, format=1036).
+    ExtendedEgressQueue(ExtendedEgressQueue),
+    /// Extended ACL data (enterprise=0, format=1037).
+    ExtendedAcl(ExtendedAcl),
+    /// Extended function/symbol data (enterprise=0, format=1038).
+    ExtendedFunction(ExtendedFunction),
+    /// Extended transit delay data (enterprise=0, format=1039).
+    ExtendedTransit(ExtendedTransit),
+    /// Extended queue depth data (enterprise=0, format=1040).
+    ExtendedQueue(ExtendedQueue),
+    /// Extended socket IPv4 data (enterprise=0, format=2100).
+    ExtendedSocketIpv4(ExtendedSocketIpv4),
+    /// Extended socket IPv6 data (enterprise=0, format=2101).
+    ExtendedSocketIpv6(ExtendedSocketIpv6),
+    /// Extended proxy socket IPv4 data (enterprise=0, format=2102).
+    ExtendedProxySocketIpv4(ExtendedProxySocketIpv4),
+    /// Extended proxy socket IPv6 data (enterprise=0, format=2103).
+    ExtendedProxySocketIpv6(ExtendedProxySocketIpv6),
+    /// JVM runtime information (enterprise=0, format=2105).
+    JvmRuntime(JvmRuntime),
+    /// Memcache operation data (enterprise=0, format=2200).
+    MemcacheOperation(MemcacheOperation),
+    /// Application operation data (enterprise=0, format=2202).
+    AppOperation(AppOperation),
+    /// HTTP request data (enterprise=0, format=2206).
+    HttpRequest(HttpRequest),
+    /// Extended proxy request data (enterprise=0, format=2207).
+    ExtendedProxyRequest(ExtendedProxyRequest),
     /// Unrecognized flow record type, preserved as raw bytes.
     Unknown {
         /// Enterprise code from the record header.
@@ -134,6 +254,152 @@ pub(crate) fn parse_flow_records(
                 1005 => {
                     let (_, r) = extended_url::parse_extended_url(record_data)?;
                     FlowRecord::ExtendedUrl(r)
+                }
+                1006 => {
+                    let (_, r) = extended_mpls::parse_extended_mpls(record_data)?;
+                    FlowRecord::ExtendedMpls(r)
+                }
+                1007 => {
+                    let (_, r) = extended_nat::parse_extended_nat(record_data)?;
+                    FlowRecord::ExtendedNat(r)
+                }
+                1008 => {
+                    let (_, r) = extended_mpls_tunnel::parse_extended_mpls_tunnel(record_data)?;
+                    FlowRecord::ExtendedMplsTunnel(r)
+                }
+                1009 => {
+                    let (_, r) = extended_mpls_vc::parse_extended_mpls_vc(record_data)?;
+                    FlowRecord::ExtendedMplsVc(r)
+                }
+                1010 => {
+                    let (_, r) = extended_mpls_ftn::parse_extended_mpls_ftn(record_data)?;
+                    FlowRecord::ExtendedMplsFtn(r)
+                }
+                1011 => {
+                    let (_, r) =
+                        extended_mpls_ldp_fec::parse_extended_mpls_ldp_fec(record_data)?;
+                    FlowRecord::ExtendedMplsLdpFec(r)
+                }
+                1012 => {
+                    let (_, r) = extended_vlan_tunnel::parse_extended_vlan_tunnel(record_data)?;
+                    FlowRecord::ExtendedVlanTunnel(r)
+                }
+                1013 => {
+                    let (_, r) =
+                        extended_80211_payload::parse_extended_80211_payload(record_data)?;
+                    FlowRecord::Extended80211Payload(r)
+                }
+                1014 => {
+                    let (_, r) = extended_80211_rx::parse_extended_80211_rx(record_data)?;
+                    FlowRecord::Extended80211Rx(r)
+                }
+                1015 => {
+                    let (_, r) = extended_80211_tx::parse_extended_80211_tx(record_data)?;
+                    FlowRecord::Extended80211Tx(r)
+                }
+                1021 => {
+                    let (_, r) = sampled_ethernet::parse_sampled_ethernet(record_data)?;
+                    FlowRecord::ExtendedL2TunnelEgress(r)
+                }
+                1022 => {
+                    let (_, r) = sampled_ethernet::parse_sampled_ethernet(record_data)?;
+                    FlowRecord::ExtendedL2TunnelIngress(r)
+                }
+                1023 => {
+                    let (_, r) = sampled_ipv4::parse_sampled_ipv4(record_data)?;
+                    FlowRecord::ExtendedIpv4TunnelEgress(r)
+                }
+                1024 => {
+                    let (_, r) = sampled_ipv4::parse_sampled_ipv4(record_data)?;
+                    FlowRecord::ExtendedIpv4TunnelIngress(r)
+                }
+                1025 => {
+                    let (_, r) = sampled_ipv6::parse_sampled_ipv6(record_data)?;
+                    FlowRecord::ExtendedIpv6TunnelEgress(r)
+                }
+                1026 => {
+                    let (_, r) = sampled_ipv6::parse_sampled_ipv6(record_data)?;
+                    FlowRecord::ExtendedIpv6TunnelIngress(r)
+                }
+                1027 => {
+                    let (_, r) =
+                        extended_decapsulate::parse_extended_decapsulate_egress(record_data)?;
+                    FlowRecord::ExtendedDecapsulateEgress(r)
+                }
+                1028 => {
+                    let (_, r) =
+                        extended_decapsulate::parse_extended_decapsulate_ingress(record_data)?;
+                    FlowRecord::ExtendedDecapsulateIngress(r)
+                }
+                1029 => {
+                    let (_, r) = extended_vni::parse_extended_vni_egress(record_data)?;
+                    FlowRecord::ExtendedVniEgress(r)
+                }
+                1030 => {
+                    let (_, r) = extended_vni::parse_extended_vni_ingress(record_data)?;
+                    FlowRecord::ExtendedVniIngress(r)
+                }
+                1036 => {
+                    let (_, r) =
+                        extended_egress_queue::parse_extended_egress_queue(record_data)?;
+                    FlowRecord::ExtendedEgressQueue(r)
+                }
+                1037 => {
+                    let (_, r) = extended_acl::parse_extended_acl(record_data)?;
+                    FlowRecord::ExtendedAcl(r)
+                }
+                1038 => {
+                    let (_, r) = extended_function::parse_extended_function(record_data)?;
+                    FlowRecord::ExtendedFunction(r)
+                }
+                1039 => {
+                    let (_, r) = extended_transit::parse_extended_transit(record_data)?;
+                    FlowRecord::ExtendedTransit(r)
+                }
+                1040 => {
+                    let (_, r) = extended_queue::parse_extended_queue(record_data)?;
+                    FlowRecord::ExtendedQueue(r)
+                }
+                2100 => {
+                    let (_, r) = extended_socket_ipv4::parse_extended_socket_ipv4(record_data)?;
+                    FlowRecord::ExtendedSocketIpv4(r)
+                }
+                2101 => {
+                    let (_, r) = extended_socket_ipv6::parse_extended_socket_ipv6(record_data)?;
+                    FlowRecord::ExtendedSocketIpv6(r)
+                }
+                2102 => {
+                    let (_, r) = extended_proxy_socket_ipv4::parse_extended_proxy_socket_ipv4(
+                        record_data,
+                    )?;
+                    FlowRecord::ExtendedProxySocketIpv4(r)
+                }
+                2103 => {
+                    let (_, r) = extended_proxy_socket_ipv6::parse_extended_proxy_socket_ipv6(
+                        record_data,
+                    )?;
+                    FlowRecord::ExtendedProxySocketIpv6(r)
+                }
+                2105 => {
+                    let (_, r) = jvm_runtime::parse_jvm_runtime(record_data)?;
+                    FlowRecord::JvmRuntime(r)
+                }
+                2200 => {
+                    let (_, r) = memcache_operation::parse_memcache_operation(record_data)?;
+                    FlowRecord::MemcacheOperation(r)
+                }
+                2202 => {
+                    let (_, r) = app_operation::parse_app_operation(record_data)?;
+                    FlowRecord::AppOperation(r)
+                }
+                2206 => {
+                    let (_, r) = http_request::parse_http_request(record_data)?;
+                    FlowRecord::HttpRequest(r)
+                }
+                2207 => {
+                    let (_, r) =
+                        extended_proxy_request::parse_extended_proxy_request(record_data)?;
+                    FlowRecord::ExtendedProxyRequest(r)
                 }
                 _ => FlowRecord::Unknown {
                     enterprise,

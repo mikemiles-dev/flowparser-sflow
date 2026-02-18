@@ -1,7 +1,7 @@
 [package]
 name = "flowparser-sflow"
 description = "Parser for sFlow v5 datagrams"
-version = "0.1.1"
+version = "0.2.0"
 edition = "2024"
 authors = ["michael.mileusnich@gmail.com"]
 license = "MIT OR Apache-2.0"

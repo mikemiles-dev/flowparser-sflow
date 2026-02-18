@@ -2,6 +2,7 @@ use std::net::{Ipv4Addr, Ipv6Addr};
 
 use crate::counter_records::*;
 use crate::datagram::*;
+use crate::error::{ParseContext, ParseErrorKind};
 use crate::flow_records::*;
 use crate::samples::*;
 use crate::*;
@@ -801,13 +802,13 @@ fn test_parse_sampled_ethernet() {
 fn test_parse_error_display() {
     let err = SflowError::ParseError {
         offset: 42,
-        context: "flow record".to_string(),
-        kind: "bad data".to_string(),
+        context: ParseContext::FlowSample,
+        kind: ParseErrorKind::NomError(nom::error::ErrorKind::Eof),
     };
     let msg = format!("{}", err);
     assert!(msg.contains("42"));
-    assert!(msg.contains("flow record"));
-    assert!(msg.contains("bad data"));
+    assert!(msg.contains("flow sample"));
+    assert!(msg.contains("Eof"));
 }
 
 #[test]
@@ -821,8 +822,9 @@ fn test_invalid_address_type() {
     let result = parser.parse_bytes(&data);
     assert!(result.error.is_some());
     match result.error.unwrap() {
-        SflowError::ParseError { context, .. } => {
-            assert!(context.contains("address"));
+        SflowError::ParseError { context, kind, .. } => {
+            assert_eq!(context, ParseContext::AgentAddress);
+            assert_eq!(kind, ParseErrorKind::InvalidAddressType);
         }
         other => panic!("Expected ParseError for address, got {:?}", other),
     }

@@ -12,7 +12,7 @@ mod tests;
 
 pub use counter_records::CounterRecord;
 pub use datagram::{AddressType, SflowDatagram};
-pub use error::SflowError;
+pub use error::{ParseContext, ParseErrorKind, SflowError};
 pub use flow_records::FlowRecord;
 pub use samples::SflowSample;
 
@@ -79,7 +79,8 @@ impl SflowParser {
                     datagrams,
                     error: Some(SflowError::Incomplete {
                         available: remaining.len(),
-                        context: "datagram header".to_string(),
+                        expected: None,
+                        context: ParseContext::DatagramHeader,
                     }),
                 };
             }
