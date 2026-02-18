@@ -1,15 +1,15 @@
 use nom::IResult;
-use nom::number::complete::be_u32;
+use nom::number::complete::{be_f32, be_u32};
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct HostCpu {
-    /// 1-minute load average as IEEE 754 float bits. Use `f32::from_bits()` to convert.
-    pub load_one: u32,
-    /// 5-minute load average as IEEE 754 float bits. Use `f32::from_bits()` to convert.
-    pub load_five: u32,
-    /// 15-minute load average as IEEE 754 float bits. Use `f32::from_bits()` to convert.
-    pub load_fifteen: u32,
+    /// 1-minute load average.
+    pub load_one: f32,
+    /// 5-minute load average.
+    pub load_five: f32,
+    /// 15-minute load average.
+    pub load_fifteen: f32,
     pub proc_run: u32,
     pub proc_total: u32,
     pub cpu_num: u32,
@@ -27,9 +27,9 @@ pub struct HostCpu {
 }
 
 pub(crate) fn parse_host_cpu(input: &[u8]) -> IResult<&[u8], HostCpu> {
-    let (input, load_one) = be_u32(input)?;
-    let (input, load_five) = be_u32(input)?;
-    let (input, load_fifteen) = be_u32(input)?;
+    let (input, load_one) = be_f32(input)?;
+    let (input, load_five) = be_f32(input)?;
+    let (input, load_fifteen) = be_f32(input)?;
     let (input, proc_run) = be_u32(input)?;
     let (input, proc_total) = be_u32(input)?;
     let (input, cpu_num) = be_u32(input)?;

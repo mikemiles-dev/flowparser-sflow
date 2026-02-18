@@ -22,7 +22,7 @@ pub enum AddressType {
 ///
 /// Each datagram is sent by an sFlow agent and contains a header
 /// identifying the agent, plus zero or more flow or counter samples.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SflowDatagram {
     /// sFlow version (always 5).
     pub version: u32,
