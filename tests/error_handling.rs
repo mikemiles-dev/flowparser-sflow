@@ -89,7 +89,8 @@ fn test_error_display_messages() {
 
     let err = SflowError::Incomplete {
         available: 2,
-        context: "header".to_string(),
+        expected: None,
+        context: ParseContext::DatagramHeader,
     };
     let msg = format!("{}", err);
     assert!(msg.contains("2"));

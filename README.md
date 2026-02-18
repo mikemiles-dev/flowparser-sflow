@@ -22,7 +22,7 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-flowparser-sflow = "0.1.0"
+flowparser-sflow = "0.2.0"
 ```
 
 ### Basic Parsing
@@ -144,6 +144,8 @@ Datagram
 | `AddressType` | IPv4 or IPv6 agent address |
 | `ParseResult` | Contains parsed datagrams and optional error |
 | `SflowError` | Error variants: Incomplete, UnsupportedVersion, ParseError, TooManySamples |
+| `ParseContext` | Enum identifying the parsing phase where an error occurred |
+| `ParseErrorKind` | Enum categorizing parse errors (InvalidAddressType, NomError) |
 
 ## Examples
 

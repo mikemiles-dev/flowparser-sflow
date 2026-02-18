@@ -1,5 +1,24 @@
 # Releases
 
+## 0.2.0
+
+### Breaking Changes
+
+- **`SflowError::Incomplete`**: `context` field changed from `String` to `ParseContext` enum; added `expected: Option<usize>` field
+- **`SflowError::ParseError`**: `context` field changed from `String` to `ParseContext` enum; `kind` field changed from `String` to `ParseErrorKind` enum
+
+### Added
+
+- `ParseContext` enum with 14 variants covering all parsing phases (e.g., `DatagramHeader`, `AgentAddress`, `FlowSample`)
+- `ParseErrorKind` enum with `InvalidAddressType` and `NomError(nom::error::ErrorKind)` variants
+- `expected: Option<usize>` field on `SflowError::Incomplete` for cases where the required byte count is known
+
+### Improved
+
+- Error paths no longer allocate on the heap (enums are `Copy` instead of `String`)
+- Consumers can exhaustively match on error contexts and kinds
+- Display output remains compatible with previous format
+
 ## 0.1.1
 
 - Added crates.io badge to README

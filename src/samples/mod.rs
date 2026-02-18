@@ -4,7 +4,7 @@ pub mod flow_sample;
 use nom::number::complete::be_u32;
 use serde::{Deserialize, Serialize};
 
-use crate::error::SflowError;
+use crate::error::{ParseContext, ParseErrorKind, SflowError};
 pub use counter_sample::{CounterSample, ExpandedCounterSample};
 pub use flow_sample::{ExpandedFlowSample, FlowSample};
 
@@ -47,7 +47,8 @@ pub(crate) fn parse_samples(
             be_u32(input).map_err(|_: nom::Err<nom::error::Error<&[u8]>>| {
                 SflowError::Incomplete {
                     available: input.len(),
-                    context: "sample data_format".to_string(),
+                    expected: None,
+                    context: ParseContext::SampleDataFormat,
                 }
             })?;
 
@@ -58,7 +59,8 @@ pub(crate) fn parse_samples(
             be_u32(rest).map_err(|_: nom::Err<nom::error::Error<&[u8]>>| {
                 SflowError::Incomplete {
                     available: rest.len(),
-                    context: "sample length".to_string(),
+                    expected: None,
+                    context: ParseContext::SampleLength,
                 }
             })?;
 
@@ -66,7 +68,8 @@ pub(crate) fn parse_samples(
         if rest.len() < sample_length {
             return Err(SflowError::Incomplete {
                 available: rest.len(),
-                context: format!("sample data (need {sample_length} bytes)"),
+                expected: Some(sample_length),
+                context: ParseContext::SampleData,
             });
         }
 
@@ -79,8 +82,8 @@ pub(crate) fn parse_samples(
                     let (_, fs) = flow_sample::parse_flow_sample(sample_data).map_err(|e| {
                         SflowError::ParseError {
                             offset: 0,
-                            context: "flow sample".to_string(),
-                            kind: nom_error_kind(&e),
+                            context: ParseContext::FlowSample,
+                            kind: nom_err_to_kind(&e),
                         }
                     })?;
                     SflowSample::Flow(fs)
@@ -90,8 +93,8 @@ pub(crate) fn parse_samples(
                         counter_sample::parse_counter_sample(sample_data).map_err(|e| {
                             SflowError::ParseError {
                                 offset: 0,
-                                context: "counter sample".to_string(),
-                                kind: nom_error_kind(&e),
+                                context: ParseContext::CounterSample,
+                                kind: nom_err_to_kind(&e),
                             }
                         })?;
                     SflowSample::Counter(cs)
@@ -100,8 +103,8 @@ pub(crate) fn parse_samples(
                     let (_, efs) = flow_sample::parse_expanded_flow_sample(sample_data)
                         .map_err(|e| SflowError::ParseError {
                             offset: 0,
-                            context: "expanded flow sample".to_string(),
-                            kind: nom_error_kind(&e),
+                            context: ParseContext::ExpandedFlowSample,
+                            kind: nom_err_to_kind(&e),
                         })?;
                     SflowSample::ExpandedFlow(efs)
                 }
@@ -109,8 +112,8 @@ pub(crate) fn parse_samples(
                     let (_, ecs) = counter_sample::parse_expanded_counter_sample(sample_data)
                         .map_err(|e| SflowError::ParseError {
                         offset: 0,
-                        context: "expanded counter sample".to_string(),
-                        kind: nom_error_kind(&e),
+                        context: ParseContext::ExpandedCounterSample,
+                        kind: nom_err_to_kind(&e),
                     })?;
                     SflowSample::ExpandedCounter(ecs)
                 }
@@ -135,9 +138,9 @@ pub(crate) fn parse_samples(
     Ok((input, samples))
 }
 
-fn nom_error_kind(e: &nom::Err<nom::error::Error<&[u8]>>) -> String {
+fn nom_err_to_kind(e: &nom::Err<nom::error::Error<&[u8]>>) -> ParseErrorKind {
     match e {
-        nom::Err::Error(e) | nom::Err::Failure(e) => format!("{:?}", e.code),
-        nom::Err::Incomplete(_) => "incomplete".to_string(),
+        nom::Err::Error(e) | nom::Err::Failure(e) => ParseErrorKind::NomError(e.code),
+        nom::Err::Incomplete(_) => ParseErrorKind::NomError(nom::error::ErrorKind::Complete),
     }
 }
