@@ -1,6 +1,8 @@
 pub mod app_operations;
 pub mod app_resources;
 pub mod app_workers;
+pub mod broadcom_bst;
+pub mod broadcom_tables;
 pub mod energy;
 pub mod ethernet_interface;
 pub mod fans;
@@ -21,6 +23,7 @@ pub mod jvm_statistics;
 pub mod lag_port_stats;
 pub mod memcache_counters;
 pub mod mib2_icmp_group;
+pub mod nvidia_gpu;
 pub mod mib2_ip_group;
 pub mod mib2_tcp_group;
 pub mod mib2_udp_group;
@@ -50,6 +53,8 @@ use serde::{Deserialize, Serialize};
 pub use app_operations::AppOperations;
 pub use app_resources::AppResources;
 pub use app_workers::AppWorkers;
+pub use broadcom_bst::{BroadcomBstDeviceBuffers, BroadcomBstPortBuffers};
+pub use broadcom_tables::BroadcomHwTables;
 pub use energy::Energy;
 pub use ethernet_interface::EthernetInterface;
 pub use fans::Fans;
@@ -69,6 +74,7 @@ pub use jmx_runtime::JmxRuntime;
 pub use jvm_statistics::JvmStatistics;
 pub use lag_port_stats::LagPortStats;
 pub use memcache_counters::MemcacheCounters;
+pub use nvidia_gpu::NvidiaGpu;
 pub use mib2_icmp_group::Mib2IcmpGroup;
 pub use mib2_ip_group::Mib2IpGroup;
 pub use mib2_tcp_group::Mib2TcpGroup;
@@ -184,6 +190,14 @@ pub enum CounterRecord {
     Humidity(Humidity),
     /// Fan status counters (enterprise=0, format=3003).
     Fans(Fans),
+    /// Broadcom BST device buffer utilization (enterprise=4413, format=1).
+    BroadcomBstDeviceBuffers(BroadcomBstDeviceBuffers),
+    /// Broadcom BST port buffer utilization (enterprise=4413, format=2).
+    BroadcomBstPortBuffers(BroadcomBstPortBuffers),
+    /// Broadcom ASIC hardware table utilization (enterprise=4413, format=3).
+    BroadcomHwTables(BroadcomHwTables),
+    /// NVIDIA GPU counters via NVML (enterprise=5703, format=1).
+    NvidiaGpu(NvidiaGpu),
     /// XenServer virtual interface metadata (enterprise=4300, format=2).
     XenVif(XenVif),
     /// Unrecognized counter record type, preserved as raw bytes.
@@ -408,6 +422,25 @@ pub(crate) fn parse_counter_records(
                 (4300, 2) => {
                     let (_, r) = xen_vif::parse_xen_vif(record_data)?;
                     CounterRecord::XenVif(r)
+                }
+                (4413, 1) => {
+                    let (_, r) =
+                        broadcom_bst::parse_broadcom_bst_device_buffers(record_data)?;
+                    CounterRecord::BroadcomBstDeviceBuffers(r)
+                }
+                (4413, 2) => {
+                    let (_, r) =
+                        broadcom_bst::parse_broadcom_bst_port_buffers(record_data)?;
+                    CounterRecord::BroadcomBstPortBuffers(r)
+                }
+                (4413, 3) => {
+                    let (_, r) =
+                        broadcom_tables::parse_broadcom_hw_tables(record_data)?;
+                    CounterRecord::BroadcomHwTables(r)
+                }
+                (5703, 1) => {
+                    let (_, r) = nvidia_gpu::parse_nvidia_gpu(record_data)?;
+                    CounterRecord::NvidiaGpu(r)
                 }
                 _ => CounterRecord::Unknown {
                     enterprise,

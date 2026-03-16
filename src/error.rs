@@ -19,6 +19,7 @@ pub enum ParseContext {
     CounterSample,
     ExpandedFlowSample,
     ExpandedCounterSample,
+    DiscardedPacket,
 }
 
 impl fmt::Display for ParseContext {
@@ -38,6 +39,7 @@ impl fmt::Display for ParseContext {
             ParseContext::CounterSample => "counter sample",
             ParseContext::ExpandedFlowSample => "expanded flow sample",
             ParseContext::ExpandedCounterSample => "expanded counter sample",
+            ParseContext::DiscardedPacket => "discarded packet",
         };
         f.write_str(s)
     }

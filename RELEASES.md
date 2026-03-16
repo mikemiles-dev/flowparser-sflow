@@ -1,5 +1,35 @@
 # Releases
 
+## 0.3.0
+
+### Added
+
+- **17 new flow record types** (enterprise=0):
+  - NAT port translation (format 1020): `ExtendedNatPort`
+  - InfiniBand (formats 1031–1033): `ExtendedIbLrh`, `ExtendedIbGrh`, `ExtendedIbBrh`
+  - Hardware trap & drop monitoring (formats 1041–1042): `ExtendedHwTrap`, `ExtendedLinuxDropReason`
+  - Nanosecond timestamp (format 1043): `ExtendedTimestamp`
+  - Application context (formats 2203–2205): `AppParentContext`, `AppInitiator`, `AppTarget`
+  - TCP info (format 2209): `ExtendedTcpInfo`
+  - Entities (format 2210): `ExtendedEntities`
+- **4 new vendor-specific counter record types**:
+  - Broadcom BST device buffers (enterprise=4413, format=1): `BroadcomBstDeviceBuffers`
+  - Broadcom BST port buffers (enterprise=4413, format=2): `BroadcomBstPortBuffers`
+  - Broadcom ASIC hardware tables (enterprise=4413, format=3): `BroadcomHwTables`
+  - NVIDIA GPU via NVML (enterprise=5703, format=1): `NvidiaGpu`
+- **Discarded Packet sample type** (enterprise=0, format=5): `DiscardedPacket` — dropped packet notification with reason code and flow records
+- `ParseContext::DiscardedPacket` variant for error reporting
+- **Throughput benchmark** (`throughput_bench`) measuring realistic multi-sample datagram parsing (~1.9 GiB/s on Apple Silicon)
+- **Spec validation tool** (`validate_sflow` example) for verifying hex-encoded sFlow datagrams against the sFlow v5 specification
+
+### Improved
+
+- Total flow record types: 38 → 55
+- Total counter record types: 43 → 48 (including 5 vendor-specific)
+- Total sample types: 4 → 5
+- Published benchmark results in README
+- Updated protocol structure diagram in README
+
 ## 0.2.0
 
 ### Breaking Changes
