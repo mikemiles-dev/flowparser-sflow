@@ -1,4 +1,5 @@
 pub mod counter_sample;
+pub mod discarded_packet;
 pub mod flow_sample;
 
 use nom::number::complete::be_u32;
@@ -6,6 +7,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::error::{ParseContext, ParseErrorKind, SflowError};
 pub use counter_sample::{CounterSample, ExpandedCounterSample};
+pub use discarded_packet::DiscardedPacket;
 pub use flow_sample::{ExpandedFlowSample, FlowSample};
 
 /// An sFlow sample carried within a datagram.
@@ -23,6 +25,8 @@ pub enum SflowSample {
     ExpandedFlow(ExpandedFlowSample),
     /// Expanded counter sample with unpacked source ID (enterprise=0, format=4).
     ExpandedCounter(ExpandedCounterSample),
+    /// Discarded packet notification (enterprise=0, format=5).
+    DiscardedPacket(DiscardedPacket),
     /// Unrecognized sample type, preserved as raw bytes.
     Unknown {
         /// Enterprise code from the sample header.
@@ -116,6 +120,15 @@ pub(crate) fn parse_samples(
                         kind: nom_err_to_kind(&e),
                     })?;
                     SflowSample::ExpandedCounter(ecs)
+                }
+                5 => {
+                    let (_, dp) = discarded_packet::parse_discarded_packet(sample_data)
+                        .map_err(|e| SflowError::ParseError {
+                            offset: 0,
+                            context: ParseContext::DiscardedPacket,
+                            kind: nom_err_to_kind(&e),
+                        })?;
+                    SflowSample::DiscardedPacket(dp)
                 }
                 _ => SflowSample::Unknown {
                     enterprise,

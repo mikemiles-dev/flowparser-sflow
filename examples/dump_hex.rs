@@ -352,6 +352,24 @@ fn print_sample(idx: usize, sample: &SflowSample) {
                 print_counter_record(ri, rec);
             }
         }
+        SflowSample::DiscardedPacket(flowparser_sflow::samples::DiscardedPacket {
+            sequence_number,
+            ds_class,
+            ds_index,
+            drops,
+            input,
+            output,
+            reason,
+            records,
+        }) => {
+            println!(
+                "Sample[{idx}]: DiscardedPacket {{ seq={sequence_number}, ds_class={ds_class}, ds_index={ds_index}, drops={drops}, input={input}, output={output}, reason={reason}, records={} }}",
+                records.len()
+            );
+            for (ri, rec) in records.iter().enumerate() {
+                print_flow_record(ri, rec);
+            }
+        }
         SflowSample::Unknown {
             enterprise,
             format,

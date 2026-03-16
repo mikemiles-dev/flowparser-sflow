@@ -1,18 +1,26 @@
+pub mod app_initiator;
 pub mod app_operation;
+pub mod app_parent_context;
+pub mod app_target;
 pub mod extended_80211_payload;
 pub mod extended_80211_rx;
 pub mod extended_80211_tx;
 pub mod extended_acl;
 pub mod extended_decapsulate;
 pub mod extended_egress_queue;
+pub mod extended_entities;
 pub mod extended_function;
 pub mod extended_gateway;
+pub mod extended_hw_trap;
+pub mod extended_ib;
+pub mod extended_linux_drop_reason;
 pub mod extended_mpls;
 pub mod extended_mpls_ftn;
 pub mod extended_mpls_ldp_fec;
 pub mod extended_mpls_tunnel;
 pub mod extended_mpls_vc;
 pub mod extended_nat;
+pub mod extended_nat_port;
 pub mod extended_proxy_request;
 pub mod extended_proxy_socket_ipv4;
 pub mod extended_proxy_socket_ipv6;
@@ -21,6 +29,8 @@ pub mod extended_router;
 pub mod extended_socket_ipv4;
 pub mod extended_socket_ipv6;
 pub mod extended_switch;
+pub mod extended_tcp_info;
+pub mod extended_timestamp;
 pub mod extended_transit;
 pub mod extended_url;
 pub mod extended_user;
@@ -39,21 +49,29 @@ use nom::bytes::complete::take;
 use nom::number::complete::be_u32;
 use serde::{Deserialize, Serialize};
 
+pub use app_initiator::AppInitiator;
 pub use app_operation::AppOperation;
+pub use app_parent_context::AppParentContext;
+pub use app_target::AppTarget;
 pub use extended_80211_payload::Extended80211Payload;
 pub use extended_80211_rx::Extended80211Rx;
 pub use extended_80211_tx::Extended80211Tx;
 pub use extended_acl::ExtendedAcl;
 pub use extended_decapsulate::{ExtendedDecapsulateEgress, ExtendedDecapsulateIngress};
 pub use extended_egress_queue::ExtendedEgressQueue;
+pub use extended_entities::ExtendedEntities;
 pub use extended_function::ExtendedFunction;
 pub use extended_gateway::ExtendedGateway;
+pub use extended_hw_trap::ExtendedHwTrap;
+pub use extended_ib::{ExtendedIbBrh, ExtendedIbGrh, ExtendedIbLrh};
+pub use extended_linux_drop_reason::ExtendedLinuxDropReason;
 pub use extended_mpls::ExtendedMpls;
 pub use extended_mpls_ftn::ExtendedMplsFtn;
 pub use extended_mpls_ldp_fec::ExtendedMplsLdpFec;
 pub use extended_mpls_tunnel::ExtendedMplsTunnel;
 pub use extended_mpls_vc::ExtendedMplsVc;
 pub use extended_nat::ExtendedNat;
+pub use extended_nat_port::ExtendedNatPort;
 pub use extended_proxy_request::ExtendedProxyRequest;
 pub use extended_proxy_socket_ipv4::ExtendedProxySocketIpv4;
 pub use extended_proxy_socket_ipv6::ExtendedProxySocketIpv6;
@@ -62,6 +80,8 @@ pub use extended_router::ExtendedRouter;
 pub use extended_socket_ipv4::ExtendedSocketIpv4;
 pub use extended_socket_ipv6::ExtendedSocketIpv6;
 pub use extended_switch::ExtendedSwitch;
+pub use extended_tcp_info::ExtendedTcpInfo;
+pub use extended_timestamp::ExtendedTimestamp;
 pub use extended_transit::ExtendedTransit;
 pub use extended_url::ExtendedUrl;
 pub use extended_user::ExtendedUser;
@@ -103,6 +123,8 @@ pub enum FlowRecord {
     ExtendedMpls(ExtendedMpls),
     /// Extended NAT data — translated source and destination addresses (enterprise=0, format=1007).
     ExtendedNat(ExtendedNat),
+    /// Extended NAT port translation data (enterprise=0, format=1020).
+    ExtendedNatPort(ExtendedNatPort),
     /// Extended MPLS tunnel data (enterprise=0, format=1008).
     ExtendedMplsTunnel(ExtendedMplsTunnel),
     /// Extended MPLS virtual circuit data (enterprise=0, format=1009).
@@ -139,6 +161,12 @@ pub enum FlowRecord {
     ExtendedVniEgress(ExtendedVniEgress),
     /// Extended VNI ingress data (enterprise=0, format=1030).
     ExtendedVniIngress(ExtendedVniIngress),
+    /// InfiniBand Local Routing Header (enterprise=0, format=1031).
+    ExtendedIbLrh(ExtendedIbLrh),
+    /// InfiniBand Global Routing Header (enterprise=0, format=1032).
+    ExtendedIbGrh(ExtendedIbGrh),
+    /// InfiniBand Base Transport Header (enterprise=0, format=1033).
+    ExtendedIbBrh(ExtendedIbBrh),
     /// Extended egress queue identifier (enterprise=0, format=1036).
     ExtendedEgressQueue(ExtendedEgressQueue),
     /// Extended ACL data (enterprise=0, format=1037).
@@ -149,6 +177,12 @@ pub enum FlowRecord {
     ExtendedTransit(ExtendedTransit),
     /// Extended queue depth data (enterprise=0, format=1040).
     ExtendedQueue(ExtendedQueue),
+    /// Extended hardware trap data (enterprise=0, format=1041).
+    ExtendedHwTrap(ExtendedHwTrap),
+    /// Extended Linux kernel drop reason (enterprise=0, format=1042).
+    ExtendedLinuxDropReason(ExtendedLinuxDropReason),
+    /// Extended nanosecond-precision timestamp (enterprise=0, format=1043).
+    ExtendedTimestamp(ExtendedTimestamp),
     /// Extended socket IPv4 data (enterprise=0, format=2100).
     ExtendedSocketIpv4(ExtendedSocketIpv4),
     /// Extended socket IPv6 data (enterprise=0, format=2101).
@@ -163,10 +197,20 @@ pub enum FlowRecord {
     MemcacheOperation(MemcacheOperation),
     /// Application operation data (enterprise=0, format=2202).
     AppOperation(AppOperation),
+    /// Application parent context (enterprise=0, format=2203).
+    AppParentContext(AppParentContext),
+    /// Application initiator (enterprise=0, format=2204).
+    AppInitiator(AppInitiator),
+    /// Application target (enterprise=0, format=2205).
+    AppTarget(AppTarget),
     /// HTTP request data (enterprise=0, format=2206).
     HttpRequest(HttpRequest),
     /// Extended proxy request data (enterprise=0, format=2207).
     ExtendedProxyRequest(ExtendedProxyRequest),
+    /// Extended TCP info (enterprise=0, format=2209).
+    ExtendedTcpInfo(ExtendedTcpInfo),
+    /// Extended entities data (enterprise=0, format=2210).
+    ExtendedEntities(ExtendedEntities),
     /// Unrecognized flow record type, preserved as raw bytes.
     Unknown {
         /// Enterprise code from the record header.
@@ -280,6 +324,10 @@ pub(crate) fn parse_flow_records(
                         extended_mpls_ldp_fec::parse_extended_mpls_ldp_fec(record_data)?;
                     FlowRecord::ExtendedMplsLdpFec(r)
                 }
+                1020 => {
+                    let (_, r) = extended_nat_port::parse_extended_nat_port(record_data)?;
+                    FlowRecord::ExtendedNatPort(r)
+                }
                 1012 => {
                     let (_, r) = extended_vlan_tunnel::parse_extended_vlan_tunnel(record_data)?;
                     FlowRecord::ExtendedVlanTunnel(r)
@@ -339,6 +387,18 @@ pub(crate) fn parse_flow_records(
                     let (_, r) = extended_vni::parse_extended_vni_ingress(record_data)?;
                     FlowRecord::ExtendedVniIngress(r)
                 }
+                1031 => {
+                    let (_, r) = extended_ib::parse_extended_ib_lrh(record_data)?;
+                    FlowRecord::ExtendedIbLrh(r)
+                }
+                1032 => {
+                    let (_, r) = extended_ib::parse_extended_ib_grh(record_data)?;
+                    FlowRecord::ExtendedIbGrh(r)
+                }
+                1033 => {
+                    let (_, r) = extended_ib::parse_extended_ib_brh(record_data)?;
+                    FlowRecord::ExtendedIbBrh(r)
+                }
                 1036 => {
                     let (_, r) =
                         extended_egress_queue::parse_extended_egress_queue(record_data)?;
@@ -359,6 +419,20 @@ pub(crate) fn parse_flow_records(
                 1040 => {
                     let (_, r) = extended_queue::parse_extended_queue(record_data)?;
                     FlowRecord::ExtendedQueue(r)
+                }
+                1041 => {
+                    let (_, r) = extended_hw_trap::parse_extended_hw_trap(record_data)?;
+                    FlowRecord::ExtendedHwTrap(r)
+                }
+                1042 => {
+                    let (_, r) = extended_linux_drop_reason::parse_extended_linux_drop_reason(
+                        record_data,
+                    )?;
+                    FlowRecord::ExtendedLinuxDropReason(r)
+                }
+                1043 => {
+                    let (_, r) = extended_timestamp::parse_extended_timestamp(record_data)?;
+                    FlowRecord::ExtendedTimestamp(r)
                 }
                 2100 => {
                     let (_, r) = extended_socket_ipv4::parse_extended_socket_ipv4(record_data)?;
@@ -392,6 +466,18 @@ pub(crate) fn parse_flow_records(
                     let (_, r) = app_operation::parse_app_operation(record_data)?;
                     FlowRecord::AppOperation(r)
                 }
+                2203 => {
+                    let (_, r) = app_parent_context::parse_app_parent_context(record_data)?;
+                    FlowRecord::AppParentContext(r)
+                }
+                2204 => {
+                    let (_, r) = app_initiator::parse_app_initiator(record_data)?;
+                    FlowRecord::AppInitiator(r)
+                }
+                2205 => {
+                    let (_, r) = app_target::parse_app_target(record_data)?;
+                    FlowRecord::AppTarget(r)
+                }
                 2206 => {
                     let (_, r) = http_request::parse_http_request(record_data)?;
                     FlowRecord::HttpRequest(r)
@@ -400,6 +486,14 @@ pub(crate) fn parse_flow_records(
                     let (_, r) =
                         extended_proxy_request::parse_extended_proxy_request(record_data)?;
                     FlowRecord::ExtendedProxyRequest(r)
+                }
+                2209 => {
+                    let (_, r) = extended_tcp_info::parse_extended_tcp_info(record_data)?;
+                    FlowRecord::ExtendedTcpInfo(r)
+                }
+                2210 => {
+                    let (_, r) = extended_entities::parse_extended_entities(record_data)?;
+                    FlowRecord::ExtendedEntities(r)
                 }
                 _ => FlowRecord::Unknown {
                     enterprise,
