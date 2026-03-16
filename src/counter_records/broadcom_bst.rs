@@ -11,7 +11,9 @@ pub struct BroadcomBstDeviceBuffers {
     pub mc_pc: u32,
 }
 
-pub(crate) fn parse_broadcom_bst_device_buffers(input: &[u8]) -> IResult<&[u8], BroadcomBstDeviceBuffers> {
+pub(crate) fn parse_broadcom_bst_device_buffers(
+    input: &[u8],
+) -> IResult<&[u8], BroadcomBstDeviceBuffers> {
     let (input, uc_pc) = be_u32(input)?;
     let (input, mc_pc) = be_u32(input)?;
 
@@ -29,7 +31,9 @@ pub struct BroadcomBstPortBuffers {
     pub egress_queue_mc_pc: [u32; 8],
 }
 
-pub(crate) fn parse_broadcom_bst_port_buffers(input: &[u8]) -> IResult<&[u8], BroadcomBstPortBuffers> {
+pub(crate) fn parse_broadcom_bst_port_buffers(
+    input: &[u8],
+) -> IResult<&[u8], BroadcomBstPortBuffers> {
     let (input, ingress_uc_pc) = be_u32(input)?;
     let (input, ingress_mc_pc) = be_u32(input)?;
     let (input, egress_uc_pc) = be_u32(input)?;
@@ -53,9 +57,12 @@ pub(crate) fn parse_broadcom_bst_port_buffers(input: &[u8]) -> IResult<&[u8], Br
     Ok((
         rest,
         BroadcomBstPortBuffers {
-            ingress_uc_pc, ingress_mc_pc,
-            egress_uc_pc, egress_mc_pc,
-            egress_queue_uc_pc, egress_queue_mc_pc,
+            ingress_uc_pc,
+            ingress_mc_pc,
+            egress_uc_pc,
+            egress_mc_pc,
+            egress_queue_uc_pc,
+            egress_queue_mc_pc,
         },
     ))
 }

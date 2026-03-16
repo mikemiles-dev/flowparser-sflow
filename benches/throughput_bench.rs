@@ -146,7 +146,10 @@ fn bench_throughput(c: &mut Criterion) {
 
     // Verify it parses correctly
     let result = parser.parse_bytes(&datagram);
-    assert!(result.error.is_none(), "Test datagram should parse without error");
+    assert!(
+        result.error.is_none(),
+        "Test datagram should parse without error"
+    );
     assert_eq!(result.datagrams.len(), 1);
     assert_eq!(result.datagrams[0].samples.len(), 8);
 

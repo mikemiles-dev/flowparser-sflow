@@ -32,9 +32,16 @@ pub(crate) fn parse_nvidia_gpu(input: &[u8]) -> IResult<&[u8], NvidiaGpu> {
     Ok((
         input,
         NvidiaGpu {
-            device_count, processes, gpu_time, mem_time,
-            mem_total, mem_free, ecc_errors, energy,
-            temperature, fan_speed,
+            device_count,
+            processes,
+            gpu_time,
+            mem_time,
+            mem_total,
+            mem_free,
+            ecc_errors,
+            energy,
+            temperature,
+            fan_speed,
         },
     ))
 }

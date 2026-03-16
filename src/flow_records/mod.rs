@@ -467,8 +467,7 @@ pub(crate) fn parse_flow_records(
                     FlowRecord::AppOperation(r)
                 }
                 2203 => {
-                    let (_, r) =
-                        app_parent_context::parse_app_parent_context(record_data)?;
+                    let (_, r) = app_parent_context::parse_app_parent_context(record_data)?;
                     FlowRecord::AppParentContext(r)
                 }
                 2204 => {

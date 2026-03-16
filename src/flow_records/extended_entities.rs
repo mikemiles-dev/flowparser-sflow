@@ -20,7 +20,10 @@ pub(crate) fn parse_extended_entities(input: &[u8]) -> IResult<&[u8], ExtendedEn
     Ok((
         input,
         ExtendedEntities {
-            src_ds_class, src_ds_index, dst_ds_class, dst_ds_index,
+            src_ds_class,
+            src_ds_index,
+            dst_ds_class,
+            dst_ds_index,
         },
     ))
 }

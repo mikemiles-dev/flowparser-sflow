@@ -23,10 +23,10 @@ pub mod jvm_statistics;
 pub mod lag_port_stats;
 pub mod memcache_counters;
 pub mod mib2_icmp_group;
-pub mod nvidia_gpu;
 pub mod mib2_ip_group;
 pub mod mib2_tcp_group;
 pub mod mib2_udp_group;
+pub mod nvidia_gpu;
 pub mod of_port;
 pub mod ovs_dp_stats;
 pub mod port_name;
@@ -74,11 +74,11 @@ pub use jmx_runtime::JmxRuntime;
 pub use jvm_statistics::JvmStatistics;
 pub use lag_port_stats::LagPortStats;
 pub use memcache_counters::MemcacheCounters;
-pub use nvidia_gpu::NvidiaGpu;
 pub use mib2_icmp_group::Mib2IcmpGroup;
 pub use mib2_ip_group::Mib2IpGroup;
 pub use mib2_tcp_group::Mib2TcpGroup;
 pub use mib2_udp_group::Mib2UdpGroup;
+pub use nvidia_gpu::NvidiaGpu;
 pub use of_port::OfPort;
 pub use ovs_dp_stats::OvsDpStats;
 pub use port_name::PortName;
@@ -424,18 +424,15 @@ pub(crate) fn parse_counter_records(
                     CounterRecord::XenVif(r)
                 }
                 (4413, 1) => {
-                    let (_, r) =
-                        broadcom_bst::parse_broadcom_bst_device_buffers(record_data)?;
+                    let (_, r) = broadcom_bst::parse_broadcom_bst_device_buffers(record_data)?;
                     CounterRecord::BroadcomBstDeviceBuffers(r)
                 }
                 (4413, 2) => {
-                    let (_, r) =
-                        broadcom_bst::parse_broadcom_bst_port_buffers(record_data)?;
+                    let (_, r) = broadcom_bst::parse_broadcom_bst_port_buffers(record_data)?;
                     CounterRecord::BroadcomBstPortBuffers(r)
                 }
                 (4413, 3) => {
-                    let (_, r) =
-                        broadcom_tables::parse_broadcom_hw_tables(record_data)?;
+                    let (_, r) = broadcom_tables::parse_broadcom_hw_tables(record_data)?;
                     CounterRecord::BroadcomHwTables(r)
                 }
                 (5703, 1) => {

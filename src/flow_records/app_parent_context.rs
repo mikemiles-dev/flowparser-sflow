@@ -16,5 +16,12 @@ pub(crate) fn parse_app_parent_context(input: &[u8]) -> IResult<&[u8], AppParent
     let (input, operation) = parse_sflow_string(input)?;
     let (input, attributes) = parse_sflow_string(input)?;
 
-    Ok((input, AppParentContext { application, operation, attributes }))
+    Ok((
+        input,
+        AppParentContext {
+            application,
+            operation,
+            attributes,
+        },
+    ))
 }

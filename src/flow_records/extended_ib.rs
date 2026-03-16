@@ -33,8 +33,16 @@ pub(crate) fn parse_extended_ib_lrh(input: &[u8]) -> IResult<&[u8], ExtendedIbLr
     Ok((
         input,
         ExtendedIbLrh {
-            src_vl, src_sl, src_dlid, src_slid, src_lnh,
-            dst_vl, dst_sl, dst_dlid, dst_slid, dst_lnh,
+            src_vl,
+            src_sl,
+            src_dlid,
+            src_slid,
+            src_lnh,
+            dst_vl,
+            dst_sl,
+            dst_dlid,
+            dst_slid,
+            dst_lnh,
         },
     ))
 }
@@ -59,7 +67,15 @@ pub(crate) fn parse_extended_ib_grh(input: &[u8]) -> IResult<&[u8], ExtendedIbGr
     let mut d_gid = [0u8; 16];
     d_gid.copy_from_slice(d_gid_bytes);
 
-    Ok((input, ExtendedIbGrh { flow_label, tc, s_gid, d_gid }))
+    Ok((
+        input,
+        ExtendedIbGrh {
+            flow_label,
+            tc,
+            s_gid,
+            d_gid,
+        },
+    ))
 }
 
 /// InfiniBand Base Transport Header (enterprise=0, format=1033).

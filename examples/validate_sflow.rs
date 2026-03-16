@@ -9,7 +9,8 @@
 //!   cargo run --example validate_sflow -- --pcap <file.pcap>
 
 use flowparser_sflow::{
-    AddressType, CounterRecord, FlowRecord, ParseResult, SflowDatagram, SflowParser, SflowSample,
+    AddressType, CounterRecord, FlowRecord, ParseResult, SflowDatagram, SflowParser,
+    SflowSample,
 };
 use std::io::{self, BufRead};
 use std::{env, fs, process};
@@ -88,10 +89,7 @@ fn main() {
     }
 }
 
-fn validate_result(
-    line: usize,
-    result: &ParseResult,
-) -> (u64, u64, u64, u64, u64) {
+fn validate_result(line: usize, result: &ParseResult) -> (u64, u64, u64, u64, u64) {
     let mut errors = 0u64;
     let mut warnings = 0u64;
     let mut samples = 0u64;
@@ -110,14 +108,16 @@ fn validate_result(
         records += r;
     }
 
-    (result.datagrams.len() as u64, errors, warnings, samples, records)
+    (
+        result.datagrams.len() as u64,
+        errors,
+        warnings,
+        samples,
+        records,
+    )
 }
 
-fn validate_datagram(
-    line: usize,
-    dg_idx: usize,
-    dg: &SflowDatagram,
-) -> (u64, u64, u64, u64) {
+fn validate_datagram(line: usize, dg_idx: usize, dg: &SflowDatagram) -> (u64, u64, u64, u64) {
     let prefix = format!("Line {line}, Datagram {dg_idx}");
     let mut errors = 0u64;
     let mut warnings = 0u64;
@@ -160,7 +160,12 @@ fn validate_datagram(
 
         match sample {
             SflowSample::Flow(fs) => {
-                println!("[OK]   {sp}: FlowSample seq={}, rate={}, records={}", fs.sequence_number, fs.sampling_rate, fs.records.len());
+                println!(
+                    "[OK]   {sp}: FlowSample seq={}, rate={}, records={}",
+                    fs.sequence_number,
+                    fs.sampling_rate,
+                    fs.records.len()
+                );
                 if fs.sampling_rate == 0 {
                     eprintln!("[WARN] {sp}: sampling_rate is 0");
                     warnings += 1;
@@ -173,7 +178,11 @@ fn validate_datagram(
                 }
             }
             SflowSample::Counter(cs) => {
-                println!("[OK]   {sp}: CounterSample seq={}, records={}", cs.sequence_number, cs.records.len());
+                println!(
+                    "[OK]   {sp}: CounterSample seq={}, records={}",
+                    cs.sequence_number,
+                    cs.records.len()
+                );
                 for (ri, rec) in cs.records.iter().enumerate() {
                     record_count += 1;
                     let (e, w) = validate_counter_record(&format!("{sp}, Record {ri}"), rec);
@@ -182,7 +191,12 @@ fn validate_datagram(
                 }
             }
             SflowSample::ExpandedFlow(efs) => {
-                println!("[OK]   {sp}: ExpandedFlowSample seq={}, rate={}, records={}", efs.sequence_number, efs.sampling_rate, efs.records.len());
+                println!(
+                    "[OK]   {sp}: ExpandedFlowSample seq={}, rate={}, records={}",
+                    efs.sequence_number,
+                    efs.sampling_rate,
+                    efs.records.len()
+                );
                 for (ri, rec) in efs.records.iter().enumerate() {
                     record_count += 1;
                     let (e, w) = validate_flow_record(&format!("{sp}, Record {ri}"), rec);
@@ -191,7 +205,11 @@ fn validate_datagram(
                 }
             }
             SflowSample::ExpandedCounter(ecs) => {
-                println!("[OK]   {sp}: ExpandedCounterSample seq={}, records={}", ecs.sequence_number, ecs.records.len());
+                println!(
+                    "[OK]   {sp}: ExpandedCounterSample seq={}, records={}",
+                    ecs.sequence_number,
+                    ecs.records.len()
+                );
                 for (ri, rec) in ecs.records.iter().enumerate() {
                     record_count += 1;
                     let (e, w) = validate_counter_record(&format!("{sp}, Record {ri}"), rec);
@@ -200,7 +218,12 @@ fn validate_datagram(
                 }
             }
             SflowSample::DiscardedPacket(dp) => {
-                println!("[OK]   {sp}: DiscardedPacket seq={}, reason={}, records={}", dp.sequence_number, dp.reason, dp.records.len());
+                println!(
+                    "[OK]   {sp}: DiscardedPacket seq={}, reason={}, records={}",
+                    dp.sequence_number,
+                    dp.reason,
+                    dp.records.len()
+                );
                 for (ri, rec) in dp.records.iter().enumerate() {
                     record_count += 1;
                     let (e, w) = validate_flow_record(&format!("{sp}, Record {ri}"), rec);
@@ -208,8 +231,15 @@ fn validate_datagram(
                     warnings += w;
                 }
             }
-            SflowSample::Unknown { enterprise, format, data } => {
-                eprintln!("[WARN] {sp}: Unknown sample type enterprise={enterprise}, format={format}, len={}", data.len());
+            SflowSample::Unknown {
+                enterprise,
+                format,
+                data,
+            } => {
+                eprintln!(
+                    "[WARN] {sp}: Unknown sample type enterprise={enterprise}, format={format}, len={}",
+                    data.len()
+                );
                 warnings += 1;
             }
         }
@@ -225,30 +255,54 @@ fn validate_flow_record(prefix: &str, rec: &FlowRecord) -> (u64, u64) {
         FlowRecord::RawPacketHeader(r) => {
             let valid_protocols = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
             if !valid_protocols.contains(&r.header_protocol) {
-                eprintln!("[WARN] {prefix}: RawPacketHeader unknown header_protocol={}", r.header_protocol);
+                eprintln!(
+                    "[WARN] {prefix}: RawPacketHeader unknown header_protocol={}",
+                    r.header_protocol
+                );
                 warnings += 1;
             }
-            println!("[OK]   {prefix}: RawPacketHeader proto={}, frame_len={}, header_len={}", r.header_protocol, r.frame_length, r.header.len());
+            println!(
+                "[OK]   {prefix}: RawPacketHeader proto={}, frame_len={}, header_len={}",
+                r.header_protocol,
+                r.frame_length,
+                r.header.len()
+            );
         }
         FlowRecord::ExtendedTcpInfo(t) => {
             if t.direction > 2 {
-                eprintln!("[WARN] {prefix}: ExtendedTcpInfo direction={} (expected 0-2)", t.direction);
+                eprintln!(
+                    "[WARN] {prefix}: ExtendedTcpInfo direction={} (expected 0-2)",
+                    t.direction
+                );
                 warnings += 1;
             }
-            println!("[OK]   {prefix}: ExtendedTcpInfo dir={}, rtt={}, cwnd={}", t.direction, t.rtt, t.snd_cwnd);
+            println!(
+                "[OK]   {prefix}: ExtendedTcpInfo dir={}, rtt={}, cwnd={}",
+                t.direction, t.rtt, t.snd_cwnd
+            );
         }
         FlowRecord::ExtendedTimestamp(t) => {
             // Sanity: timestamp should be after 2000 and before 2100
             let year_2000_ns: u64 = 946_684_800_000_000_000;
             let year_2100_ns: u64 = 4_102_444_800_000_000_000;
             if t.nanoseconds < year_2000_ns || t.nanoseconds > year_2100_ns {
-                eprintln!("[WARN] {prefix}: ExtendedTimestamp nanoseconds={} seems out of range", t.nanoseconds);
+                eprintln!(
+                    "[WARN] {prefix}: ExtendedTimestamp nanoseconds={} seems out of range",
+                    t.nanoseconds
+                );
                 warnings += 1;
             }
             println!("[OK]   {prefix}: ExtendedTimestamp ns={}", t.nanoseconds);
         }
-        FlowRecord::Unknown { enterprise, format, data } => {
-            eprintln!("[WARN] {prefix}: Unknown flow record enterprise={enterprise}, format={format}, len={}", data.len());
+        FlowRecord::Unknown {
+            enterprise,
+            format,
+            data,
+        } => {
+            eprintln!(
+                "[WARN] {prefix}: Unknown flow record enterprise={enterprise}, format={format}, len={}",
+                data.len()
+            );
             warnings += 1;
         }
         other => {
@@ -268,17 +322,30 @@ fn validate_counter_record(prefix: &str, rec: &CounterRecord) -> (u64, u64) {
                 eprintln!("[WARN] {prefix}: GenericInterface if_speed is 0");
                 warnings += 1;
             }
-            println!("[OK]   {prefix}: GenericInterface index={}, speed={}", gi.if_index, gi.if_speed);
+            println!(
+                "[OK]   {prefix}: GenericInterface index={}, speed={}",
+                gi.if_index, gi.if_speed
+            );
         }
         CounterRecord::NvidiaGpu(g) => {
             if g.device_count == 0 {
                 eprintln!("[WARN] {prefix}: NvidiaGpu device_count is 0");
                 warnings += 1;
             }
-            println!("[OK]   {prefix}: NvidiaGpu devices={}, temp={}C, mem_total={}", g.device_count, g.temperature, g.mem_total);
+            println!(
+                "[OK]   {prefix}: NvidiaGpu devices={}, temp={}C, mem_total={}",
+                g.device_count, g.temperature, g.mem_total
+            );
         }
-        CounterRecord::Unknown { enterprise, format, data } => {
-            eprintln!("[WARN] {prefix}: Unknown counter record enterprise={enterprise}, format={format}, len={}", data.len());
+        CounterRecord::Unknown {
+            enterprise,
+            format,
+            data,
+        } => {
+            eprintln!(
+                "[WARN] {prefix}: Unknown counter record enterprise={enterprise}, format={format}, len={}",
+                data.len()
+            );
             warnings += 1;
         }
         other => {

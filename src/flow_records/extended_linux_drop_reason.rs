@@ -9,7 +9,9 @@ pub struct ExtendedLinuxDropReason {
     pub reason: String,
 }
 
-pub(crate) fn parse_extended_linux_drop_reason(input: &[u8]) -> IResult<&[u8], ExtendedLinuxDropReason> {
+pub(crate) fn parse_extended_linux_drop_reason(
+    input: &[u8],
+) -> IResult<&[u8], ExtendedLinuxDropReason> {
     let (input, reason) = parse_sflow_string(input)?;
 
     Ok((input, ExtendedLinuxDropReason { reason }))

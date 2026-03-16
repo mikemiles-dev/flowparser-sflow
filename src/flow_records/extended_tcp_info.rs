@@ -37,8 +37,18 @@ pub(crate) fn parse_extended_tcp_info(input: &[u8]) -> IResult<&[u8], ExtendedTc
     Ok((
         input,
         ExtendedTcpInfo {
-            direction, snd_mss, rcv_mss, unacked, lost, retrans,
-            pmtu, rtt, rttvar, snd_cwnd, reordering, min_rtt,
+            direction,
+            snd_mss,
+            rcv_mss,
+            unacked,
+            lost,
+            retrans,
+            pmtu,
+            rtt,
+            rttvar,
+            snd_cwnd,
+            reordering,
+            min_rtt,
         },
     ))
 }
